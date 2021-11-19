@@ -1,0 +1,8 @@
+**/__pycache__
+*.exe
+am_i_a_horse/horse-or-human/
+am_i_a_horse/validation-horse-or-human/
+am_i_a_horse/my_horse_model.pth
+am_i_a_horse/.ipynb_checkpoints/
+am_i_a_horse/*.jpg
+UoB_applied_deep_learning_cifar10/
