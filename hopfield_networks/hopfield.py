@@ -8,7 +8,7 @@ def sign(a):
         return -1.0
 
 
-def load_memories(path='../pixart/'):
+def load_memories(path='digits/'):
     filenames = ['6', '4', '7']
     memories = []
     for filename in filenames:

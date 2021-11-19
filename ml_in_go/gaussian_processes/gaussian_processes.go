@@ -193,7 +193,7 @@ func VisualiseGaussianProcessBelief(Wid, Hei int, X, Y, XStar *mat.Dense, length
                                                      }
 	}
     p.Add(sc)
-    p.Save(6*vg.Inch, 4*vg.Inch, "belief_contourmap.png")
+    p.Save(6*vg.Inch, 4*vg.Inch, "belief_contourmap.svg")
 }
 
 
