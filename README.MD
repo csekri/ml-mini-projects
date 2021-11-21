@@ -2,6 +2,22 @@
 
 The purpose of this project is to deepen my Machine Learning knowledge, and while implementing various ML algorithm I learn coding in Go. It is more fun than just calling a `scikit-learn` function in Python.
 
+## Contents
+
+<!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
+
+- [Mini-projects in Machine Learning](#mini-projects-in-machine-learning)
+	- [Contents](#contents)
+	- [Am I a horse - Pytorch CNN](#am-i-a-horse-pytorch-cnn)
+	- [Hopfield Network](#hopfield-network)
+	- [K-Means Unsupervised Classifier](#k-means-unsupervised-classifier)
+	- [Inferring Bernoulli Distribution](#inferring-bernoulli-distribution)
+	- [Bayesian Linear Regression](#bayesian-linear-regression)
+	- [Gaussian Processes](#gaussian-processes)
+	- [Principal Component Analysis](#principal-component-analysis)
+
+<!-- /TOC -->
+
 ## Am I a horse - Pytorch CNN
 
 This mini-project makes a convolutional neural network using Pytorch for binary classification whether the input image is a horse or a human. The training and validation datasets used are available here: https://laurencemoroney.com/datasets.html. We can even test the trained neural network to classify your photo and check whether you're rather a horse or human. I don't have access to CUDA enabled GPUs, hence the hyperparameters couldn't be fine-tuned to best classifying performance.
