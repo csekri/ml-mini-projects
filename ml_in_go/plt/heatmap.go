@@ -6,7 +6,7 @@ import (
     "gonum.org/v1/plot/palette"
 //     "gonum.org/v1/plot/vg/vgimg"
     "gonum.org/v1/plot/plotter"
-// //     "gonum.org/v1/gonum/mat"
+    "gonum.org/v1/gonum/mat"
 //     "gonum.org/v1/plot/vg"
 //     "gonum.org/v1/plot/vg/draw"
 //     "log"
@@ -27,17 +27,26 @@ type FuncHeatMap struct {
     YRange Range
 }
 
-func (f *FuncHeatMap) Dims() (int, int) {
-    return f.Height, f.Width
+type MatrixHeatMap struct {
+    Matrix *mat.Dense
+    XRange Range
+    YRange Range
 }
-func (f *FuncHeatMap) X(c int) float64 {
-    return f.XRange.Min + float64(c) / float64(f.Width) * (f.XRange.Max-f.XRange.Min)
+
+func (f *MatrixHeatMap) Dims() (int, int) {
+    H, W := f.Matrix.Dims()
+    return H, W
 }
-func (f *FuncHeatMap) Y(r int) float64 {
-    return f.YRange.Min + float64(r) / float64(f.Height) * ((f.YRange.Max-f.YRange.Min))
+func (f *MatrixHeatMap) X(c int) float64 {
+    _, W := f.Matrix.Dims()
+    return f.XRange.Min + float64(c) / float64(W) * (f.XRange.Max-f.XRange.Min)
 }
-func (f *FuncHeatMap) Z(c, r int) float64 {
-    return f.Function(f.Y(c), f.X(r))
+func (f *MatrixHeatMap) Y(r int) float64 {
+    H, _ := f.Matrix.Dims()
+    return f.YRange.Min + float64(r) / float64(H) * ((f.YRange.Max-f.YRange.Min))
+}
+func (f *MatrixHeatMap) Z(c, r int) float64 {
+    return f.Matrix.At(c, r)
 }
 
 func FillImage (data plotter.GridXYZ, pal palette.Palette) *image.RGBA64 {

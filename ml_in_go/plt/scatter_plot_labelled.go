@@ -17,7 +17,7 @@ import (
 )
 
 // https://pkg.go.dev/gonum.org/v1/plot/plotter#Scatter
-func ScatterPlotWithLabels(xs, ys []float64, cs []int, width, height string, filename string) {
+func ScatterPlotWithLabels(xs, ys []float64, cs []int, width, height, title string, filename string) {
     scatterData := make(plotter.XYZs, len(xs))
     for i := range scatterData {
         scatterData[i].X = xs[i]
@@ -39,7 +39,7 @@ func ScatterPlotWithLabels(xs, ys []float64, cs []int, width, height string, fil
 	colors.SetMin(minZ)
 
 	p := plot.New()
-	p.Title.Text = "Kmeans Scatter Plot"
+	p.Title.Text = title
 	p.X.Label.Text = "x"
 	p.Y.Label.Text = "y"
 	p.Add(plotter.NewGrid())

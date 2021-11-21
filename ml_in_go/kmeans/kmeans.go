@@ -135,7 +135,7 @@ func main() {
     cs, _ := KMeansClassify(points, 10)
     xs := mat.Row(nil, 0, points)
     ys := mat.Row(nil, 1, points)
-    plt.ScatterPlotWithLabels(xs, ys, cs, "10cm", "7cm", "kmeans.svg")
+    plt.ScatterPlotWithLabels(xs, ys, cs, "10cm", "7cm", "Kmeans Scatter Plot", "kmeans.svg")
 
     var img pic.RGBImg = make([]mat.Dense, 3)
     img.LoadPixels("image.jpg")

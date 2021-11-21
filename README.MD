@@ -52,4 +52,13 @@ We generated test data which is a sine curve with some noise. Samples from the f
 Again we can visualise the distribution where we believe the function runs.
 
 <img src="ml_in_go/gaussian_processes/belief_heatmap.png">
+
 <img src="ml_in_go/gaussian_processes/belief_contourmap.svg">
+
+## Principal Component Analysis
+
+PCA is an unsupervised learning algorithm. As such, we would like to infer X and f from the equation Y=f(x). We could just say f is the identity, while Y=X. Rather, we reduce the dimensionality in order to arrive at a meaningful representation. We assume that the mapping is linear. As a presentation on how PCA works we embedded a spiral in a 10 dimensional space and applied PCA to to reduce the dimensions down to 2. This resulted in the following density plot.
+
+<img src="ml_in_go/principal_component_analysis/density_plot.png">
+
+<img src="ml_in_go/principal_component_analysis/prediction_scatter_plot.svg">
