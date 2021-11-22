@@ -49,6 +49,19 @@ func (f *MatrixHeatMap) Z(c, r int) float64 {
     return f.Matrix.At(c, r)
 }
 
+func (f *FuncHeatMap) Dims() (int, int) {
+    return f.Height, f.Width
+}
+func (f *FuncHeatMap) X(c int) float64 {
+    return f.XRange.Min + float64(c) / float64(f.Width) * (f.XRange.Max-f.XRange.Min)
+}
+func (f *FuncHeatMap) Y(r int) float64 {
+    return f.YRange.Min + float64(r) / float64(f.Height) * ((f.YRange.Max-f.YRange.Min))
+}
+func (f *FuncHeatMap) Z(c, r int) float64 {
+    return f.Function(f.X(c), f.Y(r))
+}
+
 func FillImage (data plotter.GridXYZ, pal palette.Palette) *image.RGBA64 {
     n, m := data.Dims()
     img := image.NewRGBA64(image.Rectangle{

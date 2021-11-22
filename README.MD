@@ -15,6 +15,7 @@ The purpose of this project is to deepen my Machine Learning knowledge, and whil
 	- [Bayesian Linear Regression](#bayesian-linear-regression)
 	- [Gaussian Processes](#gaussian-processes)
 	- [Principal Component Analysis](#principal-component-analysis)
+	- [Optimisers](#optimisers)
 
 <!-- /TOC -->
 
@@ -75,6 +76,17 @@ Again we can visualise the distribution where we believe the function runs.
 
 PCA is an unsupervised learning algorithm. As such, we would like to infer X and f from the equation Y=f(x). We could just say f is the identity, while Y=X. Rather, we reduce the dimensionality in order to arrive at a meaningful representation. We assume that the mapping is linear. As a presentation on how PCA works we embedded a spiral in a 10 dimensional space and applied PCA to to reduce the dimensions down to 2. This resulted in the following density plot.
 
-<img src="ml_in_go/principal_component_analysis/density_plot.png">
+<table>
+<tr>
+  <td><img src="ml_in_go/principal_component_analysis/density_plot.png" width=250>
+</td>
+  <td><img src="ml_in_go/principal_component_analysis/prediction_scatter_plot.svg" width=250>
+</td>
+ </table>
 
-<img src="ml_in_go/principal_component_analysis/prediction_scatter_plot.svg">
+
+## Optimisers
+
+In the following algorithms it might not be the case necessarily that we can integrate out all the random variables, ie. the integral is intractable. In these cases we optimize. There is a zoo of optimizer algorithms most are based on the principle of gradient descent. In the `Go` language there is an elegant way of defining an optimiser. We used "function closure". To test the algorithm we choose a 2D function. We chose a Rosenbrock style function. Under this function it is notoriously difficult to find the global minimum (this is the only local minimum). The minimum is at (1,1) in our chosen function. The animation below shows the SDG, SGD with momentum and the Nesterov accelerated gradient optimisers.
+
+<img src="ml_in_go/optimisers/gradients.gif">
