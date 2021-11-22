@@ -226,9 +226,9 @@ func main() {
     // partial x: 40 x^3 - 60 x^2 + 22 x - 2
     // partial y: 40 y^3 - 60 y^2 + 22 y - 2
     // minimum is at (1,1)
-    At1 := []float64{4,-4}
-    At2 := []float64{4,-4}
-    At3 := []float64{4,-4}
+    At1 := []float64{2,-2}
+    At2 := []float64{2,-2}
+    At3 := []float64{2,-2}
     F := func (x []float64) float64 {
         return 10 * math.Pow(x[0]-x[0]*x[0], 2) + math.Pow(1-x[0], 2) + 10 * math.Pow(x[1]-x[1]*x[1], 2) + math.Pow(1-x[1], 2)
     }
@@ -252,7 +252,7 @@ func main() {
             Ats[0] = At1
             Ats[1] = At2
             Ats[2] = At3
-            p := DescentPlot(F, Ats, -6, 6, -6, 6)
+            p := DescentPlot(F, Ats, -2.5, 2.5, -2.5, 2.5)
             gm.CollectFrames(p)
         }
 

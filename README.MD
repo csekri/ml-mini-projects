@@ -1,6 +1,6 @@
 # Mini-projects in Machine Learning
 
-The purpose of this project is to deepen my Machine Learning knowledge, and while implementing various ML algorithm I learn coding in Go. It is more fun than just calling a `scikit-learn` function in Python.
+The purpose of this project is to deepen my Machine Learning knowledge, and while implementing various ML algorithms, I learn coding in `Go`. It is more fun than just calling a `scikit-learn` function in Python.
 
 ## Contents
 
@@ -74,7 +74,7 @@ Again we can visualise the distribution where we believe the function runs.
 
 ## Principal Component Analysis
 
-PCA is an unsupervised learning algorithm. As such, we would like to infer X and f from the equation Y=f(x). We could just say f is the identity, while Y=X. Rather, we reduce the dimensionality in order to arrive at a meaningful representation. We assume that the mapping is linear. As a presentation on how PCA works we embedded a spiral in a 10 dimensional space and applied PCA to to reduce the dimensions down to 2. This resulted in the following density plot.
+PCA is an unsupervised learning algorithm. As such, we would like to infer X and f from the equation Y=f(x). We could just say f is the identity, while Y=X. Rather, we reduce the dimensionality in order to arrive at a meaningful representation. We assume that the mapping is linear. As a presentation on how PCA works we embedded a spiral in a 10 dimensional space and applied PCA to reduce the dimensions down to 2. This resulted in the following density plot.
 
 <table>
 <tr>
