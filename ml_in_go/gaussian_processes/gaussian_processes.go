@@ -18,22 +18,12 @@ import (
     "gonum.org/v1/plot/font"
     "gonum.org/v1/plot/font/liberation"
 
+    "ml_playground/utils"
 )
 
 var randSeed = 10
 var randSrc = rand.NewSource(uint64(randSeed))
 
-//flatten a matrix into a slice
-func flatten(matrix *mat.Dense) []float64 {
-    height, width := matrix.Dims()
-    flattened := make([]float64, height*width)
-    for y:=0; y<height; y++ {
-        for x:=0; x<width; x++ {
-            flattened[y*width + x] = matrix.At(y,x)
-        }
-    }
-    return flattened
-}
 
 // x1 and x2 are both column vectors
 func RadialBasisFunctionKernel(x1, x2 *mat.Dense, varSigma, lengthScale float64) *mat.Dense {
@@ -53,28 +43,6 @@ func RadialBasisFunctionKernel(x1, x2 *mat.Dense, varSigma, lengthScale float64)
                     return v
                  }, kernel)
     return kernel
-}
-
-func Sym2Dense(in *mat.SymDense) *mat.Dense {
-    N, _ := in.Dims()
-    sym := mat.NewDense(N, N, nil)
-    for y:=0; y<N; y++ {
-        for x:=0; x<N; x++ {
-            sym.Set(y,x, in.At(y,x))
-        }
-    }
-    return sym
-}
-
-func Dense2Sym(in *mat.Dense) *mat.SymDense {
-    N, _ := in.Dims()
-    ordinary := mat.NewSymDense(N, nil)
-    for y:=0; y<N; y++ {
-        for x:=0; x<N; x++ {
-            ordinary.SetSym(y,x, in.At(y,x))
-        }
-    }
-    return ordinary
 }
 
 func GaussianProcessPrediction(X, Y, XStar *mat.Dense, lengthScale, varSigma, betaNoise float64) (*mat.Dense, *mat.SymDense) {
@@ -102,13 +70,13 @@ func GaussianProcessPrediction(X, Y, XStar *mat.Dense, lengthScale, varSigma, be
     sigma := mat.NewDense(KStarXSize, KStarXSize, nil)
     sigma.Mul(tmp, KStarX.T())
     sigma.Sub(KStarStar, sigma)
-    return mu, Dense2Sym(sigma)
+    return mu, utils.Dense2Sym(sigma)
 }
 
 func VisualizeGaussianProcess(X, Y, XStar *mat.Dense, lengthScale, varSigma, betaNoise float64) {
     numSamples := 100
     mu, sigma := GaussianProcessPrediction(X, Y, XStar, lengthScale, varSigma, betaNoise)
-    multiNormal, _ := distmv.NewNormal(flatten(mu), sigma, randSrc)
+    multiNormal, _ := distmv.NewNormal(utils.Flatten(mu), sigma, randSrc)
     MuDim, _ := mu.Dims()
     samples := mat.NewDense(MuDim, numSamples, nil)
     for i:=0; i<numSamples; i++ {
@@ -123,7 +91,7 @@ func VisualiseRBFKernel() {
     for i := range linSpace { linSpace[i] = -6.0 +  12.0 * float64(i) / float64(linSpaceRes) }
     linSpaceVec := mat.NewDense(linSpaceRes, 1, linSpace)
     _K := RadialBasisFunctionKernel(linSpaceVec, linSpaceVec, 1.0, 2.0)
-    K := Dense2Sym(_K)
+    K := utils.Dense2Sym(_K)
     mu := make([]float64, linSpaceRes)
     multiNormal, _ := distmv.NewNormal(mu, K, randSrc)
     numSamples := 20

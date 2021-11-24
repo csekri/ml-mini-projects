@@ -22,25 +22,25 @@ import (
     "gonum.org/v1/plot/font/liberation"
 
     "ml_playground/plt"
+    "ml_playground/pic"
+    "ml_playground/utils"
 )
 
+// random number seed and source
 var randSeed = 11
 var randSrc = rand.NewSource(uint64(randSeed))
 
-//flatten a matrix into a slice
-func flatten(matrix *mat.Dense) []float64 {
-    height, width := matrix.Dims()
-    flattened := make([]float64, height*width)
-    for y:=0; y<height; y++ {
-        for x:=0; x<width; x++ {
-            flattened[y*width + x] = matrix.At(y,x)
-        }
-    }
-    return flattened
-}
 
-// returns one plot of the many subplots depicting a heatmap of the distribution
-func PlotDistribution(mu []float64, sigma *mat.SymDense, filename string) *plot.Plot {
+/*
+SUMMARY
+    Returns the plot of a two dimensional normal distribution with mean and covariance.
+PARAMETERS
+    mu []float64: mean of the normal distribution
+    sigma *mat.SymDense: covariance of the normal distribution
+RETURN
+    *plot.Plot: the plot containing the figure
+*/
+func PlotDistribution(mu []float64, sigma *mat.SymDense) *plot.Plot {
     multiNormal, _ := distmv.NewNormal(mu, sigma, randSrc)
     m := plt.FuncHeatMap{Function: func (x,y float64) float64 {return multiNormal.Prob([]float64{x, y})},
                      Height: 200,
@@ -62,7 +62,19 @@ func PlotDistribution(mu []float64, sigma *mat.SymDense, filename string) *plot.
     return p
 }
 
-// computes the posterior distribution
+/*
+SUMMARY
+    In the Bayesian linear regression model we compute the posterior distribution
+    which is Gaussian with mean and covariance. We return the mean and the covariance
+    of this distribution.
+PARAMETERS
+    X *mat.Dense: N by M matrix where N is the number of data points, M is the number
+        dimensions
+    y *mat.Dense: N by 1 matrix, in the model we can think of y as f(X)+noise=W*X+noise
+RETURN
+    *mat.Dense: mean of the posterior distribution
+    *mat.Dense: covariance of the posterior distribution
+*/
 func Posterior(X, y *mat.Dense) (*mat.Dense, *mat.SymDense) {
     beta := 1/ 0.3
     sigma_0 := mat.NewDense(2, 2, []float64{1, 0, 0, 1})
@@ -88,7 +100,18 @@ func Posterior(X, y *mat.Dense) (*mat.Dense, *mat.SymDense) {
     return w, sigma
 }
 
-// gives the marginal distribution
+/*
+SUMMARY
+    Computes the learned belief for an unknown point xStar.
+PARAMETERS
+    xStar *mat.Dense: the unseen point, with dimensions M by 1
+    X *mat.Dense: N by M matrix where N is the number of data points, M is the number
+        dimensions
+    y *mat.Dense: N by 1 matrix, in the model we can think of y as f(X)+noise=W*X+noise
+RETURN
+    float64: mean of the y value for the unseen point
+    float64: covariance of the y value for the unseen point
+*/
 func PredictivePosterior(xStar, X, y *mat.Dense) (float64, float64) {
 //     N, _ := X.Dims()
     meanN, sigmaN := Posterior(X, y)
@@ -102,6 +125,17 @@ func PredictivePosterior(xStar, X, y *mat.Dense) (float64, float64) {
     return meanStar.At(0,0), sigmaStar
 }
 
+
+/*
+SUMMARY
+    Aligns multiple plots into a matrix.
+PARAMETERS
+    rows int: the number of rows in the plot
+    col int: the number of columns in the plot
+    plots [][]*plot.Plot: plot matrix holding the figures for each row and column
+RETURN
+    N/A
+*/
 func Subplots(rows, cols int, plots [][]*plot.Plot) {
     img := vgimg.New(vg.Points(800), vg.Points(800))
     dc := draw.New(img)
@@ -134,9 +168,10 @@ func Subplots(rows, cols int, plots [][]*plot.Plot) {
 	}
 }
 
-
-
-
+/*
+We generate X with 200 data points, then y=f(X) values are computed with some added noise.
+We then make an iteration where we see more and more of these points and plot the learned distribution.
+*/
 func main() {
     // number of points
     N := 200
@@ -148,7 +183,6 @@ func main() {
         X.Set(pt,0, -1.0 + float64(pt)/float64(N) * 2.0)
         X.Set(pt,1, 1.0)
     }
-    //
 
     // generating y with noise
     beta := 1 / 0.3
@@ -164,11 +198,13 @@ func main() {
 	const rows, cols = 4, 4
 	plots := make([][]*plot.Plot, rows)
 
+	gm := pic.GifMaker{Width: 500, Height: 500, Delay:50}
+
     // in each iteration we use one more point, and do calculations
     for row:=0; row<rows; row++ {
         plots[row] = make([]*plot.Plot, cols)
         for col:=0; col<cols; col++ {
-            i := 1 + (col*rows + row) * 13
+            i := 1 + (row*cols + col) * 13
             X_few := mat.NewDense(i, 2, nil)
             y_few := mat.NewDense(i, 1, nil)
             for idx:=0; idx<i; idx++ {
@@ -178,24 +214,16 @@ func main() {
             }
             fmt.Println("Distribution after seeing " + strconv.Itoa(i) + " data points")
             w, sigma := Posterior(X_few, y_few)
-            plots[row][col] = PlotDistribution(flatten(w), sigma, "out" + strconv.Itoa(i) + ".png")
+            p := PlotDistribution(utils.Flatten(w), sigma)
+            plots[row][col] = p
+            gm.CollectFrames(p)
 
             predMu, predSigma := PredictivePosterior(mat.NewDense(2,1, []float64{0.5, 1}), X_few, y_few)
             fmt.Println("The real value at 0.5 is " + fmt.Sprintf("%.3f", -1.3*0.5 + 0.5))
             fmt.Println("The estimated value is " + fmt.Sprintf("%.3f", predMu))
             fmt.Println("The variance is " + fmt.Sprintf("%.3f", predSigma) + "\n")
-
         }
     }
     Subplots(rows, cols, plots)
-    //
-
-
-
-
-
-
-
-
-
+    gm.RenderFrames("update_of_belief.gif")
 }

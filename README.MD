@@ -54,7 +54,7 @@ We keep tossing a biased coin and want to model our belief how much the coin is 
 
 In this regression problem we try to find the parameters <img src="https://latex.codecogs.com/gif.latex?w_0"/> and <img src="https://latex.codecogs.com/gif.latex?w_1"/> that generated the line <img src="https://latex.codecogs.com/gif.latex?y=w_1x+w_0"/>. The below image shows how the belief is updated when we started to see more and more datapoints.
 
-<img src="ml_in_go/bayesian_linear_regression/update_of_belief.png" width=600>
+<img src="ml_in_go/bayesian_linear_regression/update_of_belief.gif">
 
 ## Gaussian Processes
 
@@ -89,4 +89,4 @@ PCA is an unsupervised learning algorithm. As such, we would like to infer X and
 
 In the following algorithms it might not be the case necessarily that we can integrate out all the random variables, ie. the integral is intractable. In these cases we usually optimize. There is a zoo of optimizer algorithms most are based on the principle of gradient descent. In the `Go` language there is an elegant way of defining an optimiser. We used "function closure". To test the algorithm we choose a 2D function. We chose a Rosenbrock style function. Under this function it is notoriously difficult to find the global minimum (this is the only local minimum). The minimum is at (1,1) in our chosen function. The animation below shows different optimisers trying to reach the minimum. The gradient descent with backtracking line search has two unfair advantages because it uses not only the gradient but the function itself too, and it has an inner loop where it chooses an optimal step size.
 
-<img src="ml_in_go/optimisers/gradients.gif">
+<img src="ml_in_go/optimisers/optimisers_demo/gradients.gif">

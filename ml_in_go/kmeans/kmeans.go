@@ -2,13 +2,16 @@ package main
 
 
 import (
-  "fmt"
-  "gonum.org/v1/gonum/mat"
-  "gonum.org/v1/gonum/floats"
-  "ml_playground/pic"
-  "golang.org/x/exp/rand"
-  "gonum.org/v1/gonum/stat/distuv"
-  "ml_playground/plt"
+    "fmt"
+
+    "gonum.org/v1/gonum/mat"
+    "gonum.org/v1/gonum/floats"
+    "golang.org/x/exp/rand"
+    "gonum.org/v1/gonum/stat/distuv"
+
+    "ml_playground/pic"
+    "ml_playground/plt"
+    "ml_playground/utils"
 )
 
 func Equal2dSlice(a,b [][]float64) bool {
@@ -85,22 +88,11 @@ func KMeansClassify(points *mat.Dense, numClasses int) ([]int, [][]float64) {
     return labels, centres
 }
 
-func flatten(matrix *mat.Dense) []float64 {
-    height, width := matrix.Dims()
-    flattened := make([]float64, height*width)
-    for y:=0; y<height; y++ {
-        for x:=0; x<width; x++ {
-            flattened[y*width + x] = matrix.At(y,x)
-        }
-    }
-    return flattened
-}
-
 func SegmentImage(img pic.RGBImg, numClasses int) {
     height, width := img[0].Dims()
-    r_flat := flatten(&img[0])
-    g_flat := flatten(&img[1])
-    b_flat := flatten(&img[2])
+    r_flat := utils.Flatten(&img[0])
+    g_flat := utils.Flatten(&img[1])
+    b_flat := utils.Flatten(&img[2])
 
     points := mat.NewDense(3, width*height, nil)
     points.SetRow(0, r_flat)

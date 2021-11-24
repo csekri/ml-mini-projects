@@ -15,9 +15,6 @@ import (
     "gonum.org/v1/plot"
     "gonum.org/v1/plot/plotter"
     "gonum.org/v1/plot/vg"
-//     "gonum.org/v1/plot/vg/draw"
-//     "gonum.org/v1/plot/palette"
-//     "gonum.org/v1/plot/palette/moreland"
     "gonum.org/v1/plot/text"
     "gonum.org/v1/plot/font"
     "gonum.org/v1/plot/font/liberation"
@@ -26,18 +23,6 @@ import (
 var randSeed = 10
 var randSrc = rand.NewSource(uint64(randSeed))
 
-
-//flatten a matrix into a slice
-func flatten(matrix *mat.Dense) []float64 {
-    height, width := matrix.Dims()
-    flattened := make([]float64, height*width)
-    for y:=0; y<height; y++ {
-        for x:=0; x<width; x++ {
-            flattened[y*width + x] = matrix.At(y,x)
-        }
-    }
-    return flattened
-}
 
 func MaximumLikelihoodWeights(Y *mat.Dense, LatentSpaceDimensions int) *mat.Dense {
     _, YW := Y.Dims()

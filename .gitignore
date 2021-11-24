@@ -6,4 +6,5 @@ am_i_a_horse/my_horse_model.pth
 am_i_a_horse/.ipynb_checkpoints/
 am_i_a_horse/*.jpg
 UoB_applied_deep_learning_cifar10/
-ml_in_go/optimisers/tmp.png
+ml_in_go/optimisers/optimisers_demo/tmp.png
+ml_in_go/bayesian_linear_regression/tmp.png
