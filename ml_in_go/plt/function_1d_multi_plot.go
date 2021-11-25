@@ -1,23 +1,31 @@
 package plt
 
 import (
-// 	"fmt"
 	"log"
 	"image/color"
-// 	"os"
 
 	"golang.org/x/exp/rand"
 	"gonum.org/v1/gonum/mat"
 	"gonum.org/v1/plot"
-// 	"gonum.org/v1/plot/palette/moreland"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/vg"
 	"gonum.org/v1/plot/vg/draw"
-// 	"gonum.org/v1/plot/vg/vgimg"
-// 	"gonum.org/v1/plot/vg/vgsvg"
 )
 
 // https://pkg.go.dev/gonum.org/v1/plot/plotter#Scatter
+/*
+SUMMARY
+    Plots multiple curves on the same canvas of the form f(x)=y. Each curve is assigned a random colour.
+PARAMETERS
+    x *mat.Dense: N number of x coordinates
+    curves *mat.Dense: an N by Num matrix where Num is the number of curves, N is the number of points per curve
+    title string: the name of the figure
+    width string: the width of the plot e.g. "1cm"
+    height string: the height of the plot e.g. "1cm"
+    filename string: the name/path of the file where the figure is saved into
+RETURN
+    N/A
+*/
 func FunctionMultiPlot(x, curves *mat.Dense, title, width, height string, filename string) {
     N, Num := curves.Dims()
     p := plot.New()

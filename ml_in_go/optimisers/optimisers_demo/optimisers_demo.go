@@ -19,14 +19,35 @@ import (
     "ml_playground/optimisers"
 )
 
+// palette containing only black colour with some transparency
 type BlackPalette string
+
+/*
+SUMMARY
+    Implementing the Palette interface
+PARAMETERS
+    N/A
+RETURN
+    []color.Color: the colours forming the palette
+*/
 func (p BlackPalette) Colors() []color.Color {
     return []color.Color{color.RGBA{A:70}}
 }
 
 
-
+/*
+SUMMARY
+    Creates one frame in the gradient descent animation.
+PARAMETERS
+    function func ([]float64) float64: the objective function
+    Ats [][][]float64: the path of descending for all the optimisers
+    XMin: the domain's minimal x bound
+    XMax: the domain's maximal x bound
+    YMin: the domain's minimal x bound
+    YMax: the domain's maximal x bound
+*/
 func DescentPlot(function func ([]float64) float64, Ats [][][]float64, XMin, XMax, YMin, YMax float64) *plot.Plot {
+    // the colour of each optimiser
     myPalette := []color.Color{color.RGBA{200, 0, 0, 255},
                              color.RGBA{0, 200, 0, 255},
                              color.RGBA{0, 0, 200, 255},
@@ -56,7 +77,6 @@ func DescentPlot(function func ([]float64) float64, Ats [][][]float64, XMin, XMa
     p.Y.Label.Text = `$y$`
 
     var pal BlackPalette = ""
-//     heatmap := plotter.NewHeatMap(&m, pal)
     heights := make([]float64, 50)
     for i := range heights { heights[i] = 0.01 * math.Exp(float64(i+1)/4) }
     contour := plotter.NewContour(&m, heights, pal)
@@ -111,16 +131,21 @@ func DescentPlot(function func ([]float64) float64, Ats [][][]float64, XMin, XMa
         }
 	}
     p.Add(sc)
-
     return p
 }
 
+
+/*
+Creates an animation for each optimiser. The objective function:
+f(x,y) = 1/10(1-x)^2 + (y-x^2)^2,
+partial x:
+d/dx = 1/5 (20 x^3 - 20 x y + x - 1)
+partial y:
+d/dy = 2 (y - x^2),
+the minimum is at (1,1) with no other local minimum.
+All optimisers are initialised at position (0.9, -0.3)
+*/
 func main() {
-    // the function is
-    // 1/10(1-x)^2 + (y-x^2)^2
-    // partial x: d/dx = 1/5 (20 x^3 - 20 x y + x - 1)
-    // partial y: d/dy = 2 (y - x^2)
-    // minimum is at (1,1)
     XStart := 0.9
     YStart := -0.3
 
@@ -191,12 +216,12 @@ func main() {
 
         fmt.Println(Finished1, Finished2, Finished3, Finished4, Finished5, Finished6, Finished7, Finished8)
 
+        // optimisation finishes when the first optimiser finishes
         if (Finished1 || Finished2 || Finished3 || Finished4 || Finished5 || Finished6 || Finished7 || Finished8) {
             gm.RenderFrames("gradients.gif")
             break
         }
     }
-//     fmt.Println("Found local minima at", At)
     fmt.Println("Used", steps, "number of steps.")
 
 

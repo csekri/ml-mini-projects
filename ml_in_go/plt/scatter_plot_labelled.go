@@ -1,22 +1,31 @@
 package plt
 
 import (
-// 	"fmt"
 	"log"
 	"math"
-// 	"os"
 
-// 	"golang.org/x/exp/rand"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/palette/moreland"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/vg"
 	"gonum.org/v1/plot/vg/draw"
-// 	"gonum.org/v1/plot/vg/vgimg"
-// 	"gonum.org/v1/plot/vg/vgsvg"
 )
 
-// https://pkg.go.dev/gonum.org/v1/plot/plotter#Scatter
+/*
+SUMMARY
+    Makes a scatter plot where each point is labelled with colour.
+    Code influenced by https://pkg.go.dev/gonum.org/v1/plot/plotter#Scatter
+PARAMETERS
+    xs []float64: x coordinates
+    ys []float64: y coordinates
+    cs []float64: colour values
+    width string: width of the image e.g. "1cm"
+    height string: height of the image e.g. "1cm"
+    title string: the title of the figure
+    filename string: the name/path of the file we save the image into
+RETURN
+    N/A
+*/
 func ScatterPlotWithLabels(xs, ys []float64, cs []int, width, height, title string, filename string) {
     scatterData := make(plotter.XYZs, len(xs))
     for i := range scatterData {
@@ -65,8 +74,4 @@ func ScatterPlotWithLabels(xs, ys []float64, cs []int, width, height, title stri
 	W, _ := vg.ParseLength(width)
 	H, _ := vg.ParseLength(height)
 	p.Save(W, H, filename)
-}
-
-func main() {
-
 }

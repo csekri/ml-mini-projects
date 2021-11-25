@@ -20,10 +20,21 @@ import (
     "gonum.org/v1/plot/font/liberation"
 )
 
+// random number seed and source
 var randSeed = 10
 var randSrc = rand.NewSource(uint64(randSeed))
 
 
+/*
+SUMMARY
+    Infers the linear map that resulted in the observed data Y using
+    eigenvalue/eigenvector decomposition
+PARAMETERS
+    Y *mat.Dense: the observed data
+    LatentSpaceDimensions int: the number of dimensions in the latent space
+RETURN
+    *mat.Dense: the learned linear map
+*/
 func MaximumLikelihoodWeights(Y *mat.Dense, LatentSpaceDimensions int) *mat.Dense {
     _, YW := Y.Dims()
     CovarianceMatrix := mat.NewSymDense(YW, nil)
@@ -47,6 +58,20 @@ func MaximumLikelihoodWeights(Y *mat.Dense, LatentSpaceDimensions int) *mat.Dens
     return Weights
 }
 
+/*
+SUMMARY
+    For any one point in the observed space determines its mean and covariance
+    in the latent space
+PARAMETERS
+    W *mat.Dense: the linear map
+    y *mat.Dense: the one point we query its location in the latent space (column vector)
+    Mu *mat.Dense: the mean of each dimension of the points in observed space
+        (has the same dimensions as y)
+    Beta float64: precision (inverse of variance)
+RETURN
+    *mat.Dense: mean of the posterior distribution
+    *mat.Dense: covariance of the posterior distribution
+*/
 func Posterior(W, y, Mu *mat.Dense, Beta float64) (*mat.Dense, *mat.Dense) {
     WWidth, WHeight := W.Dims()
     tmp := mat.NewDense(WWidth, WWidth, nil)
@@ -72,6 +97,15 @@ func Posterior(W, y, Mu *mat.Dense, Beta float64) (*mat.Dense, *mat.Dense) {
     return PosteriorMu, PosteriorSigma
 }
 
+
+/*
+SUMMARY
+    Generates our sample data for the demonstration. The data forms a spiral.
+PARAMETERS
+    Num int: the number of points
+RETURN
+    *mat.Dense: matrix where each row is a point
+*/
 func GenerateSpiral(Num int) *mat.Dense {
     X := mat.NewDense(Num, 2, nil)
     Range := func (j int) float64 { return float64(j) / float64(Num) * 3.0 * 3.1416 }
@@ -83,6 +117,15 @@ func GenerateSpiral(Num int) *mat.Dense {
     return X
 }
 
+
+/*
+SUMMARY
+    Populates a slice with random numbers drawn from normal distribution.
+PARAMETERS
+    Num int: the length of the slice
+    mu float64: mean of the normal distribution
+    sigma float64: standard deviation of the normal distribution
+*/
 func RandomSlice(Num int, mu, sigma float64) []float64 {
     normal := distuv.Normal{mu, sigma, randSrc}
     slice := make([]float64, Num)
@@ -90,8 +133,18 @@ func RandomSlice(Num int, mu, sigma float64) []float64 {
     return slice
 }
 
+// this type is used to define the BW colour palette
 type BWPalette string
 
+
+/*
+SUMMARY
+    Defines the palette interface for BWPalette
+PARAMETERS
+    N/A
+RETURN
+    []color.Color: the set of colours forming the palette (order does matter)
+*/
 func (pal BWPalette) Colors() []color.Color {
     colours := make([]color.Color, 256)
     for i := range colours {
@@ -101,6 +154,15 @@ func (pal BWPalette) Colors() []color.Color {
 }
 
 
+/*
+We generate a spiral in 2d.
+We apply a random linear map on the spiral.
+We have the spiral embedded in 10d.
+Add some noise.
+We infer the linear map.
+Compute the posterior for each point in the observed points.
+Plot the result.
+*/
 func main() {
     fmt.Println("")
 
@@ -156,10 +218,8 @@ func main() {
     }
 
     var pal BWPalette = ""
-//     heatmap := plotter.NewHeatMap(&m, pal)
     heights := make([]float64, 50)
     for i := range heights { heights[i] = 0.1 * float64(i+1) }
-//     contour := plotter.NewContour(&m, heights, pal)
     fonts := font.NewCache(liberation.Collection())
 	plot.DefaultTextHandler = text.Latex{
 		Fonts: fonts,
@@ -172,7 +232,6 @@ func main() {
     Height, Width := m.Matrix.Dims()
     pImg := plotter.NewImage(img, 0, 0, float64(Width), float64(Height))
     p.Add(pImg)
-//     p.Add(contour)
     p.Save(4*vg.Inch, 4*vg.Inch, "density_plot.png")
 
     p = plot.New()
@@ -182,10 +241,6 @@ func main() {
     labels := make([]int, 100)
     for i := range labels { labels[0] = i }
     plt.ScatterPlotWithLabels(mat.Col(nil, 0, XPred), mat.Col(nil, 1, XPred), labels, "10cm", "10cm", "Scatter Plot of the Reduced Dimension", "prediction_scatter_plot.svg")
-
-
-
-
 }
 
 

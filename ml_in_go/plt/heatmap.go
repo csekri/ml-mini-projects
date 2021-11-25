@@ -2,23 +2,23 @@ package plt
 
 import (
     "image"
-//     "gonum.org/v1/plot"
     "gonum.org/v1/plot/palette"
-//     "gonum.org/v1/plot/vg/vgimg"
     "gonum.org/v1/plot/plotter"
     "gonum.org/v1/gonum/mat"
-//     "gonum.org/v1/plot/vg"
-//     "gonum.org/v1/plot/vg/draw"
-//     "log"
-//     "gonum.org/v1/gonum/stat/distuv"
-//     "golang.org/x/exp/rand"
 )
 
+
+// this type will be useful for implementing the GridXYZ interface
 type Range struct {
     Min float64
     Max float64
 }
 
+/*
+this type will implement the GridXYZ interface,
+when a function and range passed it will create a heatmap/contour
+plot of that function within the domain defined by XRange and YRange
+*/
 type FuncHeatMap struct {
     Function func (x, y float64) float64
     Height int
@@ -27,41 +27,136 @@ type FuncHeatMap struct {
     YRange Range
 }
 
+/*
+defines the type for creating heatmap/contour plot for a matrix
+*/
 type MatrixHeatMap struct {
     Matrix *mat.Dense
     XRange Range
     YRange Range
 }
 
+
+/*
+SUMMARY
+    Interface function for MatrixHeatMap
+PARAMETERS
+    N/A
+RETURN
+    int: height in pixels
+    int width in pixels
+*/
 func (f *MatrixHeatMap) Dims() (int, int) {
     H, W := f.Matrix.Dims()
     return H, W
 }
+
+
+/*
+SUMMARY
+    Interface function for MatrixHeatMap
+PARAMETERS
+    c int: column
+RETURN
+    float64: x coordinate for the c column in the matrix
+*/
 func (f *MatrixHeatMap) X(c int) float64 {
     _, W := f.Matrix.Dims()
     return f.XRange.Min + float64(c) / float64(W) * (f.XRange.Max-f.XRange.Min)
 }
+
+
+/*
+SUMMARY
+    Interface function for MatrixHeatMap
+PARAMETERS
+    r int: row
+RETURN
+    float64: y coordinate for the r row in the matrix
+*/
 func (f *MatrixHeatMap) Y(r int) float64 {
     H, _ := f.Matrix.Dims()
     return f.YRange.Min + float64(r) / float64(H) * ((f.YRange.Max-f.YRange.Min))
 }
+
+
+/*
+SUMMARY
+    Interface function for MatrixHeatMap
+PARAMETERS
+    c int: column
+    r int: row
+RETURN
+    float64: z coordinate r row and c column in the matrix
+*/
 func (f *MatrixHeatMap) Z(c, r int) float64 {
     return f.Matrix.At(c, r)
 }
 
+
+/*
+SUMMARY
+    Interface function for FuncHeatMap
+PARAMETERS
+    N/A
+RETURN
+    int: height in pixels
+    int width in pixels
+*/
 func (f *FuncHeatMap) Dims() (int, int) {
     return f.Height, f.Width
 }
+
+
+/*
+SUMMARY
+    Interface function for FuncHeatMap
+PARAMETERS
+    c int: column
+RETURN
+    float64: x coordinate for the c column in the figure
+*/
 func (f *FuncHeatMap) X(c int) float64 {
     return f.XRange.Min + float64(c) / float64(f.Width) * (f.XRange.Max-f.XRange.Min)
 }
+
+
+/*
+SUMMARY
+    Interface function for FuncHeatMap
+PARAMETERS
+    r int: row
+RETURN
+    float64: y coordinate for the r row in the figure
+*/
 func (f *FuncHeatMap) Y(r int) float64 {
     return f.YRange.Min + float64(r) / float64(f.Height) * ((f.YRange.Max-f.YRange.Min))
 }
+
+
+/*
+SUMMARY
+    Interface function for MatrixHeatMap
+PARAMETERS
+    c int: column
+    r int: row
+RETURN
+    float64: z coordinate y coordinate at r row and x coordinate at c column in the matrix
+*/
 func (f *FuncHeatMap) Z(c, r int) float64 {
     return f.Function(f.X(c), f.Y(r))
 }
 
+
+/*
+SUMMARY
+    Rasterises the heatmap plot, there are issues (gridlines) when this is not done.
+PARAMETERS
+    data plotter.GridXYZ: contains the data about the heatmap
+    pal palette.Palette: contains the colormap the paint the heatmap
+RETURN
+    *image.RGBA64: the resulting raster image with the heatmap
+*/
 func FillImage (data plotter.GridXYZ, pal palette.Palette) *image.RGBA64 {
     n, m := data.Dims()
     img := image.NewRGBA64(image.Rectangle{
@@ -93,74 +188,3 @@ func FillImage (data plotter.GridXYZ, pal palette.Palette) *image.RGBA64 {
     }
     return img
 }
-
-
-// func main() {
-//     gaussian := distuv.Normal{0, 1, rand.NewSource(69)}
-//     m := FuncHeatMap{Function: func (x,y float64) float64 {return gaussian.Prob(x)*gaussian.Prob(y*2)},
-//                      Height: 200,
-//                      Width: 200,
-//                      XRange: Range{-3, 3},
-//                      YRange: Range{-3, 3},
-//     }
-//     pal := palette.Heat(12, 1)
-//     heatmap := plotter.NewHeatMap(&m, pal)
-//     contour := plotter.NewContour(&m, []float64{0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09}, pal)
-//
-//     p := plot.New()
-//     p.Title.Text = "Heat map"
-//
-// //     p.X.Tick.Marker = integerTicks{}
-// //     p.Y.Tick.Marker = integerTicks{}
-//
-// //     p.Add(heatmap)
-//     p.Add(contour)
-//     p.Save(5*vg.Inch, 5*vg.Inch, "heatmap.pdf")
-//
-//     // Create a legend.
-//     l := plot.NewLegend()
-//     thumbs := plotter.PaletteThumbnailers(pal)
-//     for i := len(thumbs) - 1; i >= 0; i-- {
-//         t := thumbs[i]
-//         if i != 0 && i != len(thumbs)-1 {
-//             l.Add("", t)
-//             continue
-//         }
-//         var val float64
-//         switch i {
-//         case 0:
-//             val = heatmap.Min
-//         case len(thumbs) - 1:
-//             val = heatmap.Max
-//         }
-//         l.Add(fmt.Sprintf("%.2g", val), t)
-//     }
-//
-//     p.X.Padding = 0
-//     p.Y.Padding = 0
-// //     p.X.Max = 1.5
-// //     p.Y.Max = 1.5
-//
-//     img := vgimg.New(250, 175)
-//     dc := draw.New(img)
-//
-//     l.Top = true
-//     // Calculate the width of the legend.
-//     r := l.Rectangle(dc)
-//     legendWidth := r.Max.X - r.Min.X
-//     l.YOffs = -p.Title.TextStyle.FontExtents().Height // Adjust the legend down a little.
-//
-//     l.Draw(dc)
-//     dc = draw.Crop(dc, 0, -legendWidth-vg.Millimeter, 0, 0) // Make space for the legend.
-//     p.Draw(dc)
-//     w, err := os.Create("heatMap.png")
-//     if err != nil {
-//         log.Panic(err)
-//     }
-//     png := vgimg.PngCanvas{Canvas: img}
-//     if _, err = png.WriteTo(w); err != nil {
-//         log.Panic(err)
-//     }
-//
-//
-// }
