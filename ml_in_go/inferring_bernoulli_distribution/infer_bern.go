@@ -12,9 +12,24 @@ import (
 	"gonum.org/v1/plot/vg"
 )
 
+// random number seed and source
 var randSeed = 10
 var randSrc = rand.NewSource(uint64(randSeed))
 
+
+/*
+SUMMARY
+    Computes the posterior distribution. We assume the prior has beta distribution
+    as well as the posterior.
+PARAMETERS
+    a float64: parameter of the beta distribution in the prior
+    b float64: parameter of the beta distribution in the prior
+    X []float64: the data (coin flips of 1s and 0s) we have observed
+    linSpace []float64: the x values where we want to plot the probability
+        density function of the posterior
+RETURN
+    []float64: the probability density function of the probability the coin biased towards head
+*/
 func Posterior(a, b float64, X, linSpace []float64) []float64 {
     XSum := floats.Sum(X)
     a_n := a + XSum
@@ -27,6 +42,16 @@ func Posterior(a, b float64, X, linSpace []float64) []float64 {
     return pdf
 }
 
+
+/*
+SUMMARY
+    Converts points to plotter.XYs, that can be used in gonum/plot.
+PARAMETERS
+    linSpace []float64: x coordinates
+    data []float64: y coordinates
+RETURN
+    plotter.XYs: the points in the type that's useful for gonum/plot
+*/
 func plotPoints(linSpace, data []float64) plotter.XYs {
     pts := make(plotter.XYs, len(linSpace))
     for i := range pts {
@@ -36,9 +61,20 @@ func plotPoints(linSpace, data []float64) plotter.XYs {
     return pts
 }
 
+
+/*
+SUMMARY
+    Visualises the probability density function as we observe more and more points.
+PARAMETERS
+    a float64: parameter of the beta distribution in the prior
+    b float64: parameter of the beta distribution in the prior
+    priorMu []float64: a slice containing the prior distribution
+    linSpace []float64: the x values where we want to plot the probability
+        density functions
+RETURN
+    N/A
+*/
 func PlotCurveEvolution(a,b float64, priorMu, linSpace, X []float64) {
-
-
     p := plot.New()
 
     p.Title.Text = "Evolution of our model"
@@ -76,10 +112,13 @@ func PlotCurveEvolution(a,b float64, priorMu, linSpace, X []float64) {
     if err := p.Save(6*vg.Inch, 4*vg.Inch, "points.svg"); err != nil {
 		panic(err)
 	}
-
 }
 
 
+/*
+We generate the coin flips and the x values.
+We define the prior and finally plot the updated beliefs.
+*/
 func main() {
     // parameters to generate data (Bern(x|mu) in N trials) = Binomial(n, mu)
     mu := 0.2
@@ -101,6 +140,5 @@ func main() {
     beta := distuv.Beta{a, b, randSrc}
     priorMu := make([]float64, len(linSpace))
     for i := range priorMu { priorMu[i] = beta.Prob(linSpace[i]) }
-//     fmt.Println(priorMu)
     PlotCurveEvolution(a, b, priorMu, linSpace, X)
 }

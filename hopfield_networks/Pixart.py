@@ -1,12 +1,36 @@
+'''
+This file implements a simple user interface to experiment with the Hopfield network.
+'''
+
 import sys
 from sdl2 import *
 import ctypes
 import numpy as np
-
+from typing import Tuple
 
 
 class Pixart():
-    def __init__(self, windowName=b"Pixart ML Window", windowSize=(800, 800), pixelResolution=(31, 31), matrix=None):
+    """
+    This class creates a user tool the create a binary image
+    that can be tested in the Hopfield network.
+    """
+    def __init__(self: Pixart,
+                 windowName: str = b"Pixart ML Window",
+                 windowSize: Tuple[int, int] = (800, 800),
+                 pixelResolution: Tuple[int, int] = (31, 31),
+                 matrix: np.ndarray = None
+    ):
+        """
+        SUMMARY
+            Constructor of the Pixart class.
+        PARAMETERS
+            windowName str = b"Pixart ML Window": the name of the window that is being created,
+            windowSize Tuple[int, int] = (800, 800): tuple containing the dimensions of the window,
+            pixelResolution Tuple[int, int] = (31, 31): the number of rows and columns in the window,
+            matrix np.ndarray = None: the matrix of zeros and ones to which the window is initialised
+        RETURN
+            None
+        """
         self.__width, self.__height = windowSize
         if matrix is None:
             self.__matrix = np.zeros(pixelResolution, dtype=np.uint8())
@@ -19,12 +43,27 @@ class Pixart():
         self.__thickness = 7
         self.__isMouseDown = False
 
-    def getMatrix(self):
+    def getMatrix(self: Pixart) -> np.ndarray:
+        """
+        SUMMARY
+            Returns the current matrix in the interface.
+        PARAMETERS
+            N/A
+        RETURN
+            np.ndarray: numpy matrix of zeros and ones
+        """
         return self.__matrix
 
-    def run(self):
+    def run(self: Pixart) -> None:
+        """
+        SUMMARY
+            Opens and controls the Pixart window.
+        PARAMETERS
+            N/A
+        RETURN
+            None
+        """
         SDL_Init(SDL_INIT_VIDEO)
-
         running = True
         while running:
             event = SDL_Event()
@@ -53,10 +92,16 @@ class Pixart():
         SDL_DestroyRenderer(self.__renderer)
         SDL_Quit()
 
-        # np.save('9', self.getMatrix())
-        return 0
+    def __drawGrid(self: Pixart) -> None:
+        """
+        SUMMARY
+            Draws vertical and horizontal lines forming a grid.
+        PARAMETERS
+            N/A
+        RETURN
+            None
+        """
 
-    def __drawGrid(self):
         rows, cols = self.__matrix.shape
         rect = SDL_FRect()
         rect.x = 0
@@ -73,7 +118,15 @@ class Pixart():
             rect.x = i * (self.__width - self.__thickness) / cols
             SDL_RenderFillRectF(self.__renderer, rect)
 
-    def __drawFilledSquares(self):
+    def __drawFilledSquares(self: Pixart) -> None:
+        """
+        SUMMARY
+            Draws all the filled squares on the canvas.
+        PARAMETERS
+            N/A
+        RETURN
+            None
+        """
         SDL_SetRenderDrawColor(self.__renderer, 255, 0, 0, SDL_ALPHA_OPAQUE)
         rows, cols = self.__matrix.shape
         rect = SDL_FRect()
@@ -86,20 +139,40 @@ class Pixart():
                     rect.w = (self.__width - self.__thickness) / cols
                     SDL_RenderFillRectF(self.__renderer, rect)
 
-    def __squareFinder(self, x, y):
+    def __squareFinder(self: Pixart, x: int, y: int) -> Tuple[int, int]:
+        """
+        SUMMARY
+            For a mouse pointer position computes which square is under it.
+        PARAMETERS
+            x int: x coordinate of the mouse
+            y int: y coordinate of the mouse
+        RETURN
+            Tuple[int, int]: the index of the square
+        """
         rows, cols = self.__matrix.shape
         i = (x - self.__thickness / 2) / ((self.__width - self.__thickness) / cols)
         j = (y - self.__thickness / 2) / ((self.__height - self.__thickness) / rows)
         return int(i), int(j)
 
-    def __mouseMutateMatrix(self, x, y):
+    def __mouseMutateMatrix(self: Pixart, x: int, y: int) -> None:
+        """
+        SUMMARY
+            For a mouse pointer position computes which square is under it and sets
+            the underlying matrix accordingly.
+        PARAMETERS
+            x int: x coordinate of the mouse
+            y int: y coordinate of the mouse
+        RETURN
+            None
+        """
         i, j = self.__squareFinder(x, y)
         try:
             self.__matrix[j, i] = 1
-        except IndexError: # the user might be able to select square outside the matrix
+        except IndexError:  # the user might be able to select square outside the matrix
             pass
 
 
+# Runs the pixart window
 if __name__ == "__main__":
     pixart = Pixart()
     sys.exit(pixart.run())

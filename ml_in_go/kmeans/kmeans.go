@@ -14,6 +14,16 @@ import (
     "ml_playground/utils"
 )
 
+/*
+SUMMARY
+    Compares two slices of slices. Return true is they are equal,
+    otherwise returns false.
+PARAMETERS
+    a [][]float64: the first slice of slices
+    b [][]float64: the second slice of slices
+RETURN
+    bool: true if a==b else false
+*/
 func Equal2dSlice(a,b [][]float64) bool {
     for i := range a {
         if !floats.Equal(a[i], b[i]) {
@@ -23,19 +33,41 @@ func Equal2dSlice(a,b [][]float64) bool {
     return true
 }
 
-// n: number of points, dims: number of dimensions the points are embedded in
-// rangeLow, rangeHigh : random number limits
-func CreateRandomPoints(n, dims, seed int, rangeLow, rangeHigh float64) *mat.Dense {
+
+/*
+SUMMARY
+    Creates and populates an M by N matrix with uniform random numbers
+PARAMETERS
+    N int: # of rows
+    M int: # of columns
+    seed int: seed for the random number generator
+    rangeLow float64: the lower bound of the random number range
+    rangeHigh float64: the upper bound of the random number range
+RETURN
+    *mat.Dense: the random matrix
+*/
+func CreateRandomPoints(N, M, seed int, rangeLow, rangeHigh float64) *mat.Dense {
     uniform := distuv.Uniform{rangeLow, rangeHigh, rand.NewSource(uint64(seed))}
-    pts := mat.NewDense(dims, n, nil)
-    for y:=0; y<dims; y++ {
-        for x:=0; x<n; x++ {
+    pts := mat.NewDense(M, N, nil)
+    for y:=0; y<M; y++ {
+        for x:=0; x<N; x++ {
             pts.Set(y,x, uniform.Rand())
         }
     }
     return pts
 }
 
+
+/*
+SUMMARY
+    For each point in a set of points, computes which centre is the closest and labels
+    the point with the index of the centre.
+PARAMETERS
+    points *mat.Dense: the points we would like to find a centre
+    centres *mat.Dense: the centres in the KMeans algorithm
+RETURN
+    []int: the labels for each point
+*/
 func LabelPairwiseDistances(points *mat.Dense, centres [][]float64) []int {
     dims, n := points.Dims()
     var labels []int = make([]int, n)
@@ -53,6 +85,17 @@ func LabelPairwiseDistances(points *mat.Dense, centres [][]float64) []int {
     return labels
 }
 
+
+/*
+SUMMARY
+    Implements the KMeans unsupervised algorithm.
+PARAMETERS
+    points *mat.Dense: the points we would like to find a cluster
+    numClasses int: the number of clusters we would like to find
+RETURN
+    []int: the labels for each point
+    [][]float64: the centres KMeans converged into
+*/
 func KMeansClassify(points *mat.Dense, numClasses int) ([]int, [][]float64) {
     dims, n := points.Dims()
     uniform := distuv.Uniform{0, float64(n), rand.NewSource(uint64(69))}
@@ -88,6 +131,17 @@ func KMeansClassify(points *mat.Dense, numClasses int) ([]int, [][]float64) {
     return labels, centres
 }
 
+
+/*
+SUMMARY
+    Applies KMeans for image segmentation. Note that this algorithm is quite slow.
+PARAMETERS
+    img pic.RGBImg: the input image we would like to segment;
+        the output is saved into this variable
+    numClasses int: the number of colours after segmentation
+RETURN
+    N/A
+*/
 func SegmentImage(img pic.RGBImg, numClasses int) {
     height, width := img[0].Dims()
     r_flat := utils.Flatten(&img[0])
@@ -108,21 +162,11 @@ func SegmentImage(img pic.RGBImg, numClasses int) {
 }
 
 
+/*
+We create random points, apply KMeans and visualise it.
+We also segment an image with KMeans and save the result.
+*/
 func main() {
-//     uniform := distuv.Uniform{0, 10, rand.NewSource(10)}
-//     var xs, ys, cs []float64
-//     for i:=0; i<50; i++ {
-//         xs = append(xs, uniform.Rand())
-//         ys = append(ys, uniform.Rand())
-//         cs = append(cs, uniform.Rand())
-//     }
-//     points := mat.NewDense(2, 1000, nil)
-//     dims, n := points.Dims()
-//     for y:=0; y<dims; y++ {
-//         for x:=0; x<n; x++ {
-//             points.Set(y,x, uniform.Rand())
-//         }
-//     }
     points := CreateRandomPoints(300, 2, 6, 0, 255)
     cs, _ := KMeansClassify(points, 10)
     xs := mat.Row(nil, 0, points)
@@ -133,13 +177,4 @@ func main() {
     img.LoadPixels("image.jpg")
     SegmentImage(img, 15)
     img.SaveImage("image_segmented.jpg")
-
-
-
-    
-
-
-
-
-
 }

@@ -1,8 +1,3 @@
-/*
-This demo show some functions in the library pic in action.
-We load the image, convert it to grayscale, then turn it into a
-binary image using dithering with 2 colours.
-*/
 package main
 
 import (
@@ -10,6 +5,12 @@ import (
     "gonum.org/v1/gonum/mat"
 )
 
+
+/*
+This demo show some functions in the library pic in action.
+We load the image, convert it to grayscale, then turn it into a
+binary image using dithering with 2 colours.
+*/
 func main() {
     var img pic.RGBImg = make([]mat.Dense, 3)
     err := img.LoadPixels("image.jpg")

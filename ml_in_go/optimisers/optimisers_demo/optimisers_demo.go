@@ -223,10 +223,4 @@ func main() {
         }
     }
     fmt.Println("Used", steps, "number of steps.")
-
-
-
-
-
-
 }

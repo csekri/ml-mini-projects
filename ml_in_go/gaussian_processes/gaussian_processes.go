@@ -21,11 +21,23 @@ import (
     "ml_playground/utils"
 )
 
+// random number seed and source
 var randSeed = 10
 var randSrc = rand.NewSource(uint64(randSeed))
 
 
-// x1 and x2 are both column vectors
+/*
+SUMMARY
+    Given two column column vectors (not necessarily same length),
+    computes the radial basis function (RBF) kernel
+PARAMETERS
+    x1 *mat.Dense: first column vector
+    x2 *mat.Dense: second column vector
+    varSigma float64: parameter of RBF
+    lengthScale float64: parameter of RBF
+RETURN
+    *mat.Dense: a matrix containing the kernel
+*/
 func RadialBasisFunctionKernel(x1, x2 *mat.Dense, varSigma, lengthScale float64) *mat.Dense {
     const EUCLIDEAN_DISTANCE = 2
     NX1, _ := x1.Dims()
@@ -45,6 +57,20 @@ func RadialBasisFunctionKernel(x1, x2 *mat.Dense, varSigma, lengthScale float64)
     return kernel
 }
 
+
+/*
+SUMMARY
+    For an unknown location Xstar, computes the distribution of its image.
+PARAMETERS
+    X *mat.Dense: column vector with the x coordinates
+    Y *mat.Dense: column vector which is f(X)+noise
+    lengthScale float64: parameter of RBF
+    varSigma float64: parameter of the RBF
+    betaNoise float64: the precision of the noise
+RETURN
+    *mat.Dense: mean of the normal distribution
+    *mat.Dense: covariance of the normal distribution
+*/
 func GaussianProcessPrediction(X, Y, XStar *mat.Dense, lengthScale, varSigma, betaNoise float64) (*mat.Dense, *mat.SymDense) {
     KStarX := RadialBasisFunctionKernel(XStar, X, lengthScale, varSigma)
     KXX := RadialBasisFunctionKernel(X, X, lengthScale, varSigma)
@@ -73,6 +99,19 @@ func GaussianProcessPrediction(X, Y, XStar *mat.Dense, lengthScale, varSigma, be
     return mu, utils.Dense2Sym(sigma)
 }
 
+
+/*
+SUMMARY
+    Draws and visualises samples from a Gaussian process.
+PARAMETERS
+    X *mat.Dense: column vector with the x coordinates
+    Y *mat.Dense: column vector which is f(X)+noise
+    lengthScale float64: parameter of RBF
+    varSigma float64: parameter of the RBF
+    betaNoise float64: the precision of the noise
+RETURN
+    N/A
+*/
 func VisualizeGaussianProcess(X, Y, XStar *mat.Dense, lengthScale, varSigma, betaNoise float64) {
     numSamples := 100
     mu, sigma := GaussianProcessPrediction(X, Y, XStar, lengthScale, varSigma, betaNoise)
@@ -85,6 +124,15 @@ func VisualizeGaussianProcess(X, Y, XStar *mat.Dense, lengthScale, varSigma, bet
     plt.FunctionMultiPlot(XStar, samples, "Samples from a Gaussian Process", "10cm", "7cm", "gp_pred.svg")
 }
 
+
+/*
+SUMMARY
+    Draws and visualises samples from an RBF kernel.
+PARAMETERS
+    N/A
+RETURN
+    N/A
+*/
 func VisualiseRBFKernel() {
     linSpaceRes := 200
     linSpace := make([]float64, linSpaceRes)
@@ -102,6 +150,22 @@ func VisualiseRBFKernel() {
     plt.FunctionMultiPlot(linSpaceVec, samples, "Radial Basis Function Samples", "10cm", "7cm", "rbf.svg")
 }
 
+
+/*
+SUMMARY
+    Visualises in a heatmap and contour plot where we believe the function runs.
+PARAMETERS
+    Wid int: width of the heatmap in pixels
+    Hei int: height of the heatmap in pixels
+    X *mat.Dense: column vector with the x coordinates
+    Y *mat.Dense: column vector which is f(X)+noise
+    XStar *mat.Dense: a column vector where each row is an unknown locations where we would like to find Ystar=f(Xstar)
+    lengthScale float64: parameter of RBF
+    varSigma float64: parameter of the RBF
+    betaNoise float64: the precision of the noise
+RETURN
+    N/A
+*/
 func VisualiseGaussianProcessBelief(Wid, Hei int, X, Y, XStar *mat.Dense, lengthScale, varSigma, betaNoise float64) {
     mu, sigma := GaussianProcessPrediction(X, Y, XStar, lengthScale, varSigma, betaNoise)
     XRang := plt.Range{-6.0, 6.0}
@@ -120,7 +184,6 @@ func VisualiseGaussianProcessBelief(Wid, Hei int, X, Y, XStar *mat.Dense, length
                 YRange: YRang,
     }
     pal := palette.Heat(100, 1)
-//     heatmap := plotter.NewHeatMap(&m, pal)
     heights := make([]float64, 50)
     for i := range heights { heights[i] = 0.01 * float64(i+1) }
     contour := plotter.NewContour(&m, heights, pal)
@@ -136,8 +199,6 @@ func VisualiseGaussianProcessBelief(Wid, Hei int, X, Y, XStar *mat.Dense, length
     pImg := plotter.NewImage(img, 0, 0, float64(m.Width), float64(m.Height))
     p.Add(pImg)
     p.Save(6*vg.Inch, 4*vg.Inch, "belief_heatmap.png")
-//     p.Add(heatmap)
-//     p.Save(6*vg.Inch, 4*vg.Inch, "belief_heatmap.png")
 
     XSize, _ := X.Dims()
     ScatterData := make(plotter.XYs, XSize)
@@ -146,9 +207,7 @@ func VisualiseGaussianProcessBelief(Wid, Hei int, X, Y, XStar *mat.Dense, length
         ScatterData[i].Y = Y.At(i,0)
 	}
     sc, err := plotter.NewScatter(ScatterData)
-	if err != nil {
-		panic(err)
-	}
+	if err != nil { panic(err) }
 
     p = plot.New()
     p.Title.Text = `Contour map of our belief`
@@ -165,6 +224,12 @@ func VisualiseGaussianProcessBelief(Wid, Hei int, X, Y, XStar *mat.Dense, length
 }
 
 
+/*
+We visualise the RBF kernel.
+We generate five points from a sine curve and some noise.
+Then we compute the posterior of the gaussian process and visualise samples from the GP.
+We compute the marginal distribution at each point in XStar, and plot it in a heatmap and contour plot.
+*/
 func main() {
     fmt.Println("")
     VisualiseRBFKernel()
@@ -185,7 +250,4 @@ func main() {
 
     VisualizeGaussianProcess(linSpaceVec, Y, XStarVec, 2.0, 1.0, 1.5)
     VisualiseGaussianProcessBelief(200, 200, linSpaceVec, Y, XStarVec, 2.0, 1.0, 1.5)
-
-
-
 }

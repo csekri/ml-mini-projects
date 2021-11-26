@@ -1,14 +1,32 @@
 import numpy as np
 from Pixart import Pixart
+from typing import List
 
-def sign(a):
+
+def sign(a: float) -> float:
+    """
+    SUMMARY
+        The mathematical sign function. Note that 0 is mapped differently.
+    PARAMETERS
+        a float: the input number
+    RETURN
+        float64: either +1.0 or -1.0
+    """
     if a > 0:
         return 1.0
     else:
         return -1.0
 
 
-def load_memories(path='digits/'):
+def load_memories(path: str = 'digits/') -> List[np.ndarray]:
+    """
+    SUMMARY
+        Loads memories from files. These contain the digits 6, 4 and 7.
+    PARAMETERS
+        path str: the folder where the files of the digits reside
+    RETURN
+        List[np.ndarray]: list of memories
+    """
     filenames = ['6', '4', '7']
     memories = []
     for filename in filenames:
@@ -19,15 +37,20 @@ def load_memories(path='digits/'):
     return memories
 
 
-def evolve(W, test):
+def evolve(W: np.ndarray, test: np.ndarray) -> np.ndarray:
+    """
+    SUMMARY
+        Lets the input converge.
+    PARAMETERS
+        W np.ndarray: the weights of the network
+        test np.ndarray: the test from the user input
+    RETURN
+        np.ndarray: the "memory" the model converged to
+    """
     oldtest = test
     vsign = np.vectorize(sign)
     index = 0
     while True:
-        # pixart = Pixart(pixelResolution=(10, 10), matrix=oldtest.reshape((10,10)))
-        # pixart.run()
-
-        # print(index)
         index += 1
         newtest = vsign(W @ oldtest)
 
@@ -38,6 +61,7 @@ def evolve(W, test):
     return newtest
 
 
+# opens the pixart interface for user input and then runs the model
 if __name__ == "__main__":
     memories = load_memories()
     N = memories[0].shape[0]
@@ -51,7 +75,6 @@ if __name__ == "__main__":
     pixart.run()
     matrix = np.array(pixart.getMatrix(), dtype=float)
 
-    # matrix = np.array(np.load('../pixart/6.npy').reshape(-1, 1), dtype=float)
     matrix[matrix == 0] = -1
     print(matrix)
     result = evolve(W, matrix.reshape((-1,1))).reshape(matrix.shape)
