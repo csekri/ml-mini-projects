@@ -16,6 +16,7 @@ The purpose of this project is to deepen my Machine Learning knowledge, and whil
 	- [Gaussian Processes](#gaussian-processes)
 	- [Principal Component Analysis](#principal-component-analysis)
 	- [Optimisers](#optimisers)
+	- [Gaussian Process Latent Variable Model](#gaussian-process-latent-variable-model)
 
 <!-- /TOC -->
 
