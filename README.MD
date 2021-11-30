@@ -31,7 +31,7 @@ Hopfield network is a kind of recurrent neural network that provides a model for
 
 This algorithm finds clusters in the input data, thus grouping together data points by similarity. As a use case, we show how it's used to segment an image. Alternatively we can think of this algorithm which maps each datapoint to a lower dimensional representation just a label for each point.
 
-<img src="ml_in_go/kmeans/kmeans.svg" width=500>
+<img src="ml_in_go/kmeans/kmeans.svg" width=350>
 
 <table>
 <tr>
@@ -48,13 +48,13 @@ This algorithm finds clusters in the input data, thus grouping together data poi
 
 We keep tossing a biased coin and want to model our belief how much the coin is biased towards head. In the frequentist model the answer is the number heads divided by all tosses. We implemented the Bayesian model where given a prior belief we update the belief after each coin toss. In the below example we started with the loose belief the coin is fair and ended with the strong belief that the coin lands on head 20 percent of the time.
 
-<img src="ml_in_go/inferring_bernoulli_distribution/points.svg">
+<img src="ml_in_go/inferring_bernoulli_distribution/points.svg" width=350>
 
 ## Bayesian Linear Regression
 
 In this regression problem we try to find the parameters <img src="https://latex.codecogs.com/gif.latex?w_0"/> and <img src="https://latex.codecogs.com/gif.latex?w_1"/> that generated the line <img src="https://latex.codecogs.com/gif.latex?y=w_1x+w_0"/>. The below image shows how the belief is updated when we started to see more and more datapoints.
 
-<img src="ml_in_go/bayesian_linear_regression/update_of_belief.gif">
+<img src="ml_in_go/bayesian_linear_regression/update_of_belief.gif" width=300>
 
 ## Gaussian Processes
 
@@ -68,9 +68,13 @@ We generated test data which is a sine curve with some noise. Samples from the f
 
 Again we can visualise the distribution where we believe the function runs.
 
-<img src="ml_in_go/gaussian_processes/belief_heatmap.png">
-
-<img src="ml_in_go/gaussian_processes/belief_contourmap.svg">
+<table>
+<tr>
+  <td><img src="ml_in_go/gaussian_processes/belief_heatmap.png" width=300>
+</td>
+  <td><img src="ml_in_go/gaussian_processes/belief_contourmap.svg" width=300>
+</td>
+ </table>
 
 ## Principal Component Analysis
 
@@ -90,3 +94,15 @@ PCA is an unsupervised learning algorithm. As such, we would like to infer X and
 In the following algorithms it might not be the case necessarily that we can integrate out all the random variables, ie. the integral is intractable. In these cases we usually optimize. There is a zoo of optimizer algorithms most are based on the principle of gradient descent. In the `Go` language there is an elegant way of defining an optimiser. We used "function closure". To test the algorithm we choose a 2D function. We chose a Rosenbrock style function. Under this function it is notoriously difficult to find the global minimum (this is the only local minimum). The minimum is at (1,1) in our chosen function. The animation below shows different optimisers trying to reach the minimum. The gradient descent with backtracking line search has two unfair advantages because it uses not only the gradient but the function itself too, and it has an inner loop where it chooses an optimal step size.
 
 <img src="ml_in_go/optimisers/optimisers_demo/gradients.gif">
+
+## Gaussian Process Latent Variable Model
+
+This machine learning algorithm is the PCA on steroids. In contrast to PCA we use a GP prior. It can be thought of as a generalisation of PCA, using a linear kernel reduces GPLVM to PCA. We implemented GPLVM with RBF kernel. In a nutshell, we compute the marginal likelihood P(Y|X) and optimise it with respect to X. In the optimisation, we find the minimum of -log(P(Y|X)). We use the Adam optimiser implemented in the Optimisers section. To test the algorithm we generate a spiral and embed it in the 10d space in the same way we did with PCA. The resulting respective plots of the inferred spiral can be seen below.
+
+<table>
+<tr>
+  <td><img src="ml_in_go/gaussian_process_latent_variable_model/density_plot.png" width=250>
+</td>
+  <td><img src="ml_in_go/gaussian_process_latent_variable_model/prediction_scatter_plot.svg" width=250>
+</td>
+ </table>

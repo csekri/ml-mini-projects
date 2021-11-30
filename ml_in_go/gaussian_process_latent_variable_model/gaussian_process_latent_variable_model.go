@@ -5,35 +5,28 @@ import (
     "math"
     "image/color"
     "gonum.org/v1/gonum/mat"
+    "gonum.org/v1/gonum/floats"
     "golang.org/x/exp/rand"
     "gonum.org/v1/gonum/stat/distuv"
+    "gonum.org/v1/gonum/stat"
     "gonum.org/v1/gonum/stat/distmv"
-    "ml_playground/plt"
     "gonum.org/v1/plot"
     "gonum.org/v1/plot/plotter"
     "gonum.org/v1/plot/vg"
-    "gonum.org/v1/plot/vg/draw"
-    "gonum.org/v1/plot/palette"
+//     "gonum.org/v1/plot/vg/draw"
+//     "gonum.org/v1/plot/palette"
     "gonum.org/v1/plot/text"
     "gonum.org/v1/plot/font"
     "gonum.org/v1/plot/font/liberation"
 
+    "ml_playground/optimisers"
+    "ml_playground/plt"
+    "ml_playground/utils"
 )
 
 var randSeed = 10
 var randSrc = rand.NewSource(uint64(randSeed))
 
-//flatten a matrix into a slice
-func flatten(matrix *mat.Dense) []float64 {
-    height, width := matrix.Dims()
-    flattened := make([]float64, height*width)
-    for y:=0; y<height; y++ {
-        for x:=0; x<width; x++ {
-            flattened[y*width + x] = matrix.At(y,x)
-        }
-    }
-    return flattened
-}
 
 // x1 and x2 are both column vectors
 func RadialBasisFunctionKernel(x1, x2 *mat.Dense, varSigma, lengthScale float64) *mat.Dense {
@@ -42,7 +35,7 @@ func RadialBasisFunctionKernel(x1, x2 *mat.Dense, varSigma, lengthScale float64)
     NX2, _ := x2.Dims()
     kernel := mat.NewDense(NX1, NX2, nil)
     kernel.Apply(func (j,i int, v float64) float64 {
-                    dist := x1.At(j,0) - x2.At(i,0)
+                    dist := floats.Distance(mat.Row(nil, j, x1), mat.Row(nil, i, x2), EUCLIDEAN_DISTANCE)
                     return varSigma*math.Exp(-dist * dist / lengthScale)
                  }, kernel)
     // adding epsilon*(unit matrix) for numerical stability
@@ -55,75 +48,135 @@ func RadialBasisFunctionKernel(x1, x2 *mat.Dense, varSigma, lengthScale float64)
     return kernel
 }
 
-func Sym2Dense(in *mat.SymDense) *mat.Dense {
-    N, _ := in.Dims()
-    sym := mat.NewDense(N, N, nil)
-    for y:=0; y<N; y++ {
-        for x:=0; x<N; x++ {
-            sym.Set(y,x, in.At(y,x))
+func PartialDerivativeOfKernel(X, Kernel *mat.Dense, j, d int, Sigma, Lengthscale float64) *mat.Dense {
+    N, _ := Kernel.Dims()
+    kernel := mat.NewDense(N, N, nil)
+    kernel.Apply(
+        func (row, col int, v float64) float64 {
+            if row == j {
+                return 1.0 / Lengthscale * v * 2.0 * (X.At(col, d) - X.At(j, d))
+            }
+            if col == j {
+                return 1.0 / Lengthscale * v * 2.0 * (X.At(row, d) - X.At(j, d))
+            }
+            return 0.0
+        }, Kernel,
+    )
+    return kernel
+}
+
+
+func Gradient(X, Y *mat.Dense, varSigma, lengthScale float64) []float64 {
+    N, D := X.Dims()
+    grad := make([]float64, N*D)
+    Kernel := RadialBasisFunctionKernel(X, X, varSigma, lengthScale)
+    // add noise to the kernel, this also improves numerical stability
+    Kernel.Apply(
+        func (j, i int, v float64) float64 {
+            if i == j {
+                return v + 2.0
+            }
+            return v
+        }, Kernel,
+    )
+    KernelInv := mat.NewDense(N, N, nil)
+    tmp := mat.NewDense(N, N, nil)
+    tmp2 := mat.NewDense(N, N, nil)
+    err := KernelInv.Inverse(Kernel)
+    if err != nil { panic(err) }
+    for j:=0; j<N; j++ {
+        for d:=0; d<D; d++ {
+            partialDerivativeOfK := PartialDerivativeOfKernel(X, Kernel, j, d, varSigma, lengthScale)
+            tmp.Mul(KernelInv, partialDerivativeOfK)
+            grad[j*D + d] = float64(N) * mat.Trace(tmp)
+            tmp2.Mul(Y, Y.T())
+            tmp2.Mul(tmp2, tmp)
+            tmp2.Mul(tmp2, KernelInv)
+            grad[j*D + d] -= mat.Trace(tmp2)
         }
     }
-    return sym
+    return grad
 }
 
-func Dense2Sym(in *mat.Dense) *mat.SymDense {
-    N, _ := in.Dims()
-    ordinary := mat.NewSymDense(N, nil)
-    for y:=0; y<N; y++ {
-        for x:=0; x<N; x++ {
-            ordinary.SetSym(y,x, in.At(y,x))
-        }
+/*
+SUMMARY
+    Generates our sample data for the demonstration. The data forms a spiral.
+PARAMETERS
+    Num int: the number of points
+RETURN
+    *mat.Dense: matrix where each row is a point
+*/
+func GenerateSpiral(Num int) *mat.Dense {
+    X := mat.NewDense(Num, 2, nil)
+    Range := func (j int) float64 { return float64(j) / float64(Num) * 3.0 * 3.1416 }
+    for y:=0; y<Num; y++ {
+        t := Range(y)
+        X.Set(y, 0, t * math.Sin(t))
+        X.Set(y, 1, t * math.Cos(t))
     }
-    return ordinary
+    return X
 }
 
-func GaussianProcessPrediction(X, Y, XStar *mat.Dense, lengthScale, varSigma, betaNoise float64) (*mat.Dense, *mat.SymDense) {
-    KStarX := RadialBasisFunctionKernel(XStar, X, lengthScale, varSigma)
-    KXX := RadialBasisFunctionKernel(X, X, lengthScale, varSigma)
-    KXX.Apply(func (j,i int, v float64) float64 {
-                    if i == j { return v + 1 / betaNoise }
-                    return v
-                }, KXX)
-    KStarStar := RadialBasisFunctionKernel(XStar, XStar, lengthScale, varSigma)
-    KXX.Apply(func (j,i int, v float64) float64 {
-                    if i == j {
-                        return v + 0.0001
-                    }
-                    return v
-                }, KXX)
-    KXX.Inverse(KXX)
-    KXXSize, _ := KXX.Dims()
-    KStarXSize, _ := KStarX.Dims()
-    tmp := mat.NewDense(KStarXSize, KXXSize, nil)
-    tmp.Mul(KStarX, KXX)
-    mu := mat.NewDense(KStarXSize, 1, nil)
-    mu.Mul(tmp, Y)
-
-    sigma := mat.NewDense(KStarXSize, KStarXSize, nil)
-    sigma.Mul(tmp, KStarX.T())
-    sigma.Sub(KStarStar, sigma)
-    return mu, Dense2Sym(sigma)
+/*
+SUMMARY
+    Populates a slice with random numbers drawn from normal distribution.
+PARAMETERS
+    Num int: the length of the slice
+    mu float64: mean of the normal distribution
+    sigma float64: standard deviation of the normal distribution
+*/
+func RandomSlice(Num int, mu, sigma float64) []float64 {
+    normal := distuv.Normal{mu, sigma, randSrc}
+    slice := make([]float64, Num)
+    for i := range slice { slice[i] = normal.Rand() }
+    return slice
 }
 
-func VisualizeGaussianProcess(X, Y, XStar *mat.Dense, lengthScale, varSigma, betaNoise float64) {
-    numSamples := 100
-    mu, sigma := GaussianProcessPrediction(X, Y, XStar, lengthScale, varSigma, betaNoise)
-    multiNormal, _ := distmv.NewNormal(flatten(mu), sigma, randSrc)
-    MuDim, _ := mu.Dims()
-    samples := mat.NewDense(MuDim, numSamples, nil)
-    for i:=0; i<numSamples; i++ {
-        samples.SetCol(i, multiNormal.Rand(nil))
+// this type is used to define the BW colour palette
+type BWPalette string
+
+
+/*
+SUMMARY
+    Defines the palette interface for BWPalette
+PARAMETERS
+    N/A
+RETURN
+    []color.Color: the set of colours forming the palette (order does matter)
+*/
+func (pal BWPalette) Colors() []color.Color {
+    colours := make([]color.Color, 256)
+    for i := range colours {
+        colours[i] = color.RGBA{R:uint8(i), G:uint8(i), B:uint8(i), A:255}
     }
-    plt.FunctionMultiPlot(XStar, samples, "Samples from a Gaussian Process", "10cm", "7cm", "gp_pred.svg")
+    return colours
 }
 
+
+func OptimisableGrad(Y *mat.Dense, Sigma, LengthScale float64) func ([]float64) []float64 {
+    return func (X []float64) []float64 {
+        N, _ := Y.Dims()
+        XMat := mat.NewDense(N, 2, X)
+        return Gradient(XMat, Y, Sigma, LengthScale)
+    }
+}
+
+
+/*
+SUMMARY
+    Draws and visualises samples from an RBF kernel.
+PARAMETERS
+    N/A
+RETURN
+    N/A
+*/
 func VisualiseRBFKernel() {
     linSpaceRes := 200
     linSpace := make([]float64, linSpaceRes)
     for i := range linSpace { linSpace[i] = -6.0 +  12.0 * float64(i) / float64(linSpaceRes) }
     linSpaceVec := mat.NewDense(linSpaceRes, 1, linSpace)
     _K := RadialBasisFunctionKernel(linSpaceVec, linSpaceVec, 1.0, 2.0)
-    K := Dense2Sym(_K)
+    K := utils.Dense2Sym(_K)
     mu := make([]float64, linSpaceRes)
     multiNormal, _ := distmv.NewNormal(mu, K, randSrc)
     numSamples := 20
@@ -134,89 +187,125 @@ func VisualiseRBFKernel() {
     plt.FunctionMultiPlot(linSpaceVec, samples, "Radial Basis Function Samples", "10cm", "7cm", "rbf.svg")
 }
 
-func VisualiseGaussianProcessBelief(Wid, Hei int, X, Y, XStar *mat.Dense, lengthScale, varSigma, betaNoise float64) {
-    mu, sigma := GaussianProcessPrediction(X, Y, XStar, lengthScale, varSigma, betaNoise)
-    XRang := plt.Range{-6.0, 6.0}
-    YRang := plt.Range{-6.0, 6.0}
-    m := plt.FuncHeatMap{
-                Function: func (x,y float64) float64 {
-                    MuDim, _ := mu.Dims()
-//                     j := int(y - YRang.Min * float64(Hei) / (YRang.Max - YRang.Min))
-                    i := int((x - XRang.Min) * float64(MuDim) / (XRang.Max - XRang.Min))
-                    normal := distuv.Normal{mu.At(i,0), sigma.At(i,i), randSrc}
-                    return normal.Prob(y)
-                },
-                Height: Wid,
-                Width: Hei,
-                XRange: XRang,
-                YRange: YRang,
+func F(X []float64, Y *mat.Dense, Sigma, LengthScale float64) float64 {
+    N, _ := Y.Dims()
+    D := len(X) / N
+    XMat := mat.NewDense(N, D, X)
+    Kernel := RadialBasisFunctionKernel(XMat, XMat, Sigma, LengthScale)
+    Kernel.Apply(
+        func (j, i int, v float64) float64 {
+            if i == j {
+                return v + 2.0
+            }
+            return v
+        }, Kernel,
+    )
+    KernelInv := mat.NewDense(N, N, nil)
+    N, YDim := Y.Dims()
+    tmp := mat.NewDense(YDim, N, nil)
+    tmp2 := mat.NewDense(YDim, YDim, nil)
+    err := KernelInv.Inverse(Kernel)
+    if err != nil { panic(err) }
+    tmp.Mul(Y.T(), KernelInv)
+    tmp2.Mul(tmp, Y)
+    return float64(N) * math.Log(mat.Det(Kernel)) + mat.Trace(tmp2)
+}
+
+func ObjectiveFunc(Y *mat.Dense, Sigma, LengthScale float64) func ([]float64) float64 {
+    return func (X []float64) float64 {
+        return F(X, Y, Sigma, LengthScale)
     }
-    pal := palette.Heat(100, 1)
-//     heatmap := plotter.NewHeatMap(&m, pal)
-    heights := make([]float64, 50)
-    for i := range heights { heights[i] = 0.01 * float64(i+1) }
-    contour := plotter.NewContour(&m, heights, pal)
-    fonts := font.NewCache(liberation.Collection())
-	plot.DefaultTextHandler = text.Latex{
-		Fonts: fonts,
-	}
-    p := plot.New()
-    p.Title.Text = `Heatmap of our belief`
-    p.X.Label.Text = `$x$`
-    p.Y.Label.Text = `$y$`
-    img := plt.FillImage(&m, pal)
-    pImg := plotter.NewImage(img, 0, 0, float64(m.Width), float64(m.Height))
-    p.Add(pImg)
-    p.Save(6*vg.Inch, 4*vg.Inch, "belief_heatmap.png")
-//     p.Add(heatmap)
-//     p.Save(6*vg.Inch, 4*vg.Inch, "belief_heatmap.png")
-
-    XSize, _ := X.Dims()
-    ScatterData := make(plotter.XYs, XSize)
-    for i := range ScatterData {
-        ScatterData[i].X = X.At(i,0)
-        ScatterData[i].Y = Y.At(i,0)
-	}
-    sc, err := plotter.NewScatter(ScatterData)
-	if err != nil {
-		panic(err)
-	}
-
-    p = plot.New()
-    p.Title.Text = `Contour map of our belief`
-    p.X.Label.Text = `$x$`
-    p.Y.Label.Text = `$y$`
-    p.Add(contour)
-    sc.GlyphStyleFunc = func(i int) draw.GlyphStyle { return draw.GlyphStyle{
-                                                        Color: color.RGBA{A:255},
-                                                        Radius: 5, Shape: draw.CircleGlyph{},
-                                                     }
-	}
-    p.Add(sc)
-    p.Save(6*vg.Inch, 4*vg.Inch, "belief_contourmap.svg")
 }
 
 
 func main() {
     fmt.Println("")
-    VisualiseRBFKernel()
+    NumPoints := 80
 
-    N := 5
-    linSpace := make([]float64, N)
-    for i := range linSpace { linSpace[i] = -4.0 +  8.0 * float64(i) / float64(N) }
-    linSpaceVec := mat.NewDense(N, 1, linSpace)
+    X := GenerateSpiral(NumPoints)
+    W := mat.NewDense(10, 2, RandomSlice(10 * 2, 0, 1))
+    Y := mat.NewDense(NumPoints, 10, nil)
+    Y.Mul(X, W.T())
+    Normal := distuv.Normal{0, 1, randSrc}
+    Y.Apply(func (j, i int, v float64) float64 { return v + Normal.Rand() }, Y)
+    Mu := mat.NewDense(10, 1, nil)
+    for y:=0; y<10; y++ {
+        Mu.Set(y, 0, stat.Mean(mat.Col(nil, y, Y), nil))
+    }
 
-    Y := mat.NewDense(N, 1, nil)
-    normal := distuv.Normal{0.0, 1.0, randSrc}
-    Y.Apply(func (j, i int, v float64) float64 {return 2*math.Sin(float64(j)) + 0.3*normal.Rand()}, Y)
+    optimiser := optimisers.Adam(0.3, 0.90, 0.999, 1e-8, 0.5e-1)
 
-    XStarRes := 300
-    XStar := make([]float64, XStarRes)
-    for i := range XStar { XStar[i] = -6.0 +  12.0 * float64(i) / float64(XStarRes) }
-    XStarVec := mat.NewDense(XStarRes, 1, XStar)
+    gradientFunc := OptimisableGrad(Y, 1.0, 1.0/2.0)
 
-    VisualizeGaussianProcess(linSpaceVec, Y, XStarVec, 2.0, 1.0, 1.5)
-    VisualiseGaussianProcessBelief(200, 200, linSpaceVec, Y, XStarVec, 2.0, 1.0, 1.5)
+    Finished := false
+    At := make([]float64, 2*NumPoints)
+    At = RandomSlice(2*NumPoints, 0, 1)
+
+    for i:=0; i<1000 && !Finished; i++ {
+        At, Finished, _ = optimiser(gradientFunc, At)
+        fmt.Println("Step", i, "Converged?", Finished, "Loss", F(At, Y, 1.0, 1.0/2.0))
+    }
+    XPred := mat.NewDense(NumPoints, 2, nil)
+    for y:=0; y<NumPoints; y++ {
+        for x:=0; x<2; x++ {
+            XPred.Set(y, x, At[y*2 + x])
+        }
+    }
+//     labels := make([]int, NumPoints)
+//     for i:=0; i<100; i++ {
+//         labels[0] = i
+//     }
+//
+//     plt.ScatterPlotWithLabels(mat.Col(nil, 0, XPred), mat.Col(nil, 1, XPred), labels, "10cm", "10cm", "Scatter Plot of the Reduced Dimension", "prediction_scatter_plot.svg")
+
+    density := mat.NewDense(300, 300, nil)
+
+    XMin := -0.5 //floats.Min(mat.Col(nil, 0, XPred))
+    XMax := 1.5 //floats.Max(mat.Col(nil, 0, XPred))
+    YMin := -1.5 //floats.Min(mat.Col(nil, 1, XPred))
+    YMax := 0.5 //floats.Max(mat.Col(nil, 1, XPred))
+    fmt.Println(XMin, XMax, YMin, YMax)
+    for i:=0; i<NumPoints; i++ {
+        pdf, _ := distmv.NewNormal(mat.Row(nil, i, XPred), mat.NewSymDense(2, []float64{0.01,0.0,0.0,0.01}), randSrc)
+        for j:=0; j<300; j++ {
+            for k:=0; k<300; k++ {
+                y := YMin+float64(k)/300.0*(YMax-YMin)
+                x := XMin+float64(j)/300.0*(XMax-XMin)
+                density.Set(j, k, density.At(j, k) + pdf.Prob([]float64{x, y}))
+            }
+        }
+    }
+
+    m := plt.MatrixHeatMap{
+        Matrix: density,
+        XRange: plt.Range{XMin, XMax},
+        YRange: plt.Range{YMin, YMax},
+    }
+
+    var pal BWPalette = ""
+    heights := make([]float64, 50)
+    for i := range heights { heights[i] = 0.1 * float64(i+1) }
+    fonts := font.NewCache(liberation.Collection())
+	plot.DefaultTextHandler = text.Latex{
+		Fonts: fonts,
+	}
+    p := plot.New()
+    p.Title.Text = `Density plot of the spiral (GPLVM)`
+    p.X.Label.Text = `$x$`
+    p.Y.Label.Text = `$y$`
+    img := plt.FillImage(&m, pal)
+    Height, Width := m.Matrix.Dims()
+    pImg := plotter.NewImage(img, 0, 0, float64(Width), float64(Height))
+    p.Add(pImg)
+    p.Save(4*vg.Inch, 4*vg.Inch, "density_plot.png")
+
+    p = plot.New()
+    p.Title.Text = `Scatter plot of the prediction`
+    p.X.Label.Text = `$x$`
+    p.Y.Label.Text = `$y$`
+    labels := make([]int, NumPoints)
+    for i := range labels { labels[0] = i }
+    plt.ScatterPlotWithLabels(mat.Col(nil, 0, XPred), mat.Col(nil, 1, XPred), labels, "10cm", "10cm", "Scatter Plot of the Reduced Dimension (GPLVM)", "prediction_scatter_plot.svg")
 
 
 
