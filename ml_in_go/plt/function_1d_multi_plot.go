@@ -27,6 +27,7 @@ RETURN
     N/A
 */
 func FunctionMultiPlot(x, curves *mat.Dense, title, width, height string, filename string) {
+    rand.Seed(8)
     N, Num := curves.Dims()
     p := plot.New()
     p.Title.Text = title
