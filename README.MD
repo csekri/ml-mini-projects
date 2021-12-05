@@ -33,16 +33,18 @@ Hopfield network is a kind of recurrent neural network that provides a model for
 
 This algorithm finds clusters in the input data, thus grouping together data points by similarity. As a use case, we show how it's used to segment an image. Alternatively we can think of this algorithm which maps each datapoint to a lower dimensional representation just a label for each point.
 
-<img src="ml_in_go/kmeans/kmeans.svg" width=350>
+<img src="ml_in_go/kmeans/kmeans.svg" width=300>
 
 <table>
 <tr>
-  <td><img src="ml_in_go/kmeans/image.jpg" width=230></td>
-  <td><img src="ml_in_go/kmeans/image_segmented.jpg" width=230></td>
+  <td><img src="ml_in_go/kmeans/image.jpg" width=150></td>
+  <td><img src="ml_in_go/kmeans/image_segmented.jpg" width=150></td>
 </tr>
 <tr>
   <td>Original image</td>
-  <td>Segmented image in 15 colours</td>
+  <td>Segmented image
+
+  in 15 colours</td>
 </tr>
 </table>
 
@@ -72,8 +74,8 @@ Again we can visualise the distribution where we believe the function runs.
 
 <table>
 <tr>
-  <td><img src="ml_in_go/gaussian_processes/belief_heatmap.png" width=300></td>
-  <td><img src="ml_in_go/gaussian_processes/belief_contourmap.svg" width=300></td>
+  <td><img src="ml_in_go/gaussian_processes/belief_heatmap.png" width=350></td>
+  <td><img src="ml_in_go/gaussian_processes/belief_contourmap.svg" width=350></td>
 </tr>
 </table>
 
@@ -83,8 +85,8 @@ PCA is an unsupervised learning algorithm. As such, we would like to infer X and
 
 <table>
 <tr>
-  <td><img src="ml_in_go/principal_component_analysis/density_plot.png" width=250></td>
-  <td><img src="ml_in_go/principal_component_analysis/prediction_scatter_plot.svg" width=250></td>
+  <td><img src="ml_in_go/principal_component_analysis/density_plot.png" width=300></td>
+  <td><img src="ml_in_go/principal_component_analysis/prediction_scatter_plot.svg" width=300></td>
 </tr>
 </table>
 
@@ -101,20 +103,20 @@ This machine learning algorithm is the PCA on steroids. In contrast to PCA we us
 
 <table>
 <tr>
-  <td><img src="ml_in_go/gaussian_process_latent_variable_model/density_plot.png" width=250></td>
-  <td><img src="ml_in_go/gaussian_process_latent_variable_model/prediction_scatter_plot.svg" width=250></td>
+  <td><img src="ml_in_go/gaussian_process_latent_variable_model/density_plot.png" width=300></td>
+  <td><img src="ml_in_go/gaussian_process_latent_variable_model/prediction_scatter_plot.svg" width=300></td>
 </tr>
 </table>
 
 ## Bayesian Optimisation
 
-As in regular gradient descent based optimisation our task is to find argmin(F(X)) where F is the objective function. This time we think of F as a black-box function, that is very difficult to compute, therefore we want to call it limited number of times. We need two ingredients for Bayesian optimisation: a *surrogate model* and an *acquisition function*. The surrogate model evaluates our belief about the function given the already queried points. We use a Gaussian process for this task. The acquisition function can be thought of as a strategy function which takes the current belief and returns the next location for querry. A good acquisition function balances well between *exploration* and *exploitation*.
+As in regular gradient descent based optimisation our task is to find argmin(F(X)) where F is the objective function. This time we think of F as a black-box function, that is very difficult to compute, therefore we want to call it limited number of times. We need two ingredients for Bayesian optimisation: a *surrogate model* and an *acquisition function*. The surrogate model evaluates our belief about the function given the already queried points. We use a Gaussian process for this task. The acquisition function can be thought of as a strategy function which takes the current belief and returns the next location for querry. A good acquisition function balances well between *exploration* and *exploitation*. We chose *expected improvement* to be the acquisition function.
 
 <table>
 <tr>
-  <td><img src="ml_in_go/bayesian_optimisation/BO_curves.gif" width=300></td>
+  <td><img src="ml_in_go/bayesian_optimisation/BO_curves.gif" width=400></td>
 </tr>
 <tr>
-  <td><img src="ml_in_go/bayesian_optimisation/BO_expected_improvement.gif" width=300></td>
+  <td><img src="ml_in_go/bayesian_optimisation/BO_expected_improvement.gif" width=400></td>
 </tr>
 </table>

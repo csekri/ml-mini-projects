@@ -3,22 +3,20 @@ package main
 import (
     "fmt"
     "math"
-    "image/color"
     "gonum.org/v1/gonum/mat"
     "golang.org/x/exp/rand"
     "gonum.org/v1/gonum/stat/distuv"
     "gonum.org/v1/gonum/stat/distmv"
-    "ml_playground/plt"
+
     "gonum.org/v1/plot"
     "gonum.org/v1/plot/plotter"
     "gonum.org/v1/plot/vg"
-    "gonum.org/v1/plot/vg/draw"
-    "gonum.org/v1/plot/palette"
     "gonum.org/v1/plot/text"
     "gonum.org/v1/plot/font"
     "gonum.org/v1/plot/font/liberation"
 
     "ml_playground/utils"
+    "ml_playground/plt"
 )
 
 // random number seed and source
@@ -115,13 +113,19 @@ RETURN
 func VisualizeGaussianProcess(X, Y, XStar *mat.Dense, lengthScale, varSigma, betaNoise float64) {
     numSamples := 100
     mu, sigma := GaussianProcessPrediction(X, Y, XStar, lengthScale, varSigma, betaNoise)
-    multiNormal, _ := distmv.NewNormal(utils.Flatten(mu), sigma, randSrc)
+    multiNormal, _ := distmv.NewNormal(utils.Flatten(mu, true), sigma, randSrc)
     MuDim, _ := mu.Dims()
     samples := mat.NewDense(MuDim, numSamples, nil)
     for i:=0; i<numSamples; i++ {
         samples.SetCol(i, multiNormal.Rand(nil))
     }
-    plt.FunctionMultiPlot(XStar, samples, "Samples from a Gaussian Process", "10cm", "7cm", "gp_pred.svg")
+    p := plot.New()
+    lines := plt.MakeMultiLineUnicorn(mat.Col(nil, 0, XStar), samples, 1.2, plt.DesignedPalette{Type: plt.RANDOM_PALETTE, Num: numSamples, Extra: 6}, nil)
+    for _, line := range lines { p.Add(line) }
+//     p.Add(lines...) // this apparently doesn't work
+    p.Title.Text, p.X.Label.Text, p.Y.Label.Text = "Samples from a Gaussian Process", "x", "y"
+    p.Save(300, 200, "gp_pred.svg")
+
 }
 
 
@@ -135,8 +139,7 @@ RETURN
 */
 func VisualiseRBFKernel() {
     linSpaceRes := 200
-    linSpace := make([]float64, linSpaceRes)
-    for i := range linSpace { linSpace[i] = -6.0 +  12.0 * float64(i) / float64(linSpaceRes) }
+    linSpace := utils.Linspace(-6.0, 6.0, linSpaceRes)
     linSpaceVec := mat.NewDense(linSpaceRes, 1, linSpace)
     _K := RadialBasisFunctionKernel(linSpaceVec, linSpaceVec, 1.0, 2.0)
     K := utils.Dense2Sym(_K)
@@ -147,7 +150,12 @@ func VisualiseRBFKernel() {
         for i:=0; i<numSamples; i++ {
             samples.SetCol(i, multiNormal.Rand(nil))
         }
-    plt.FunctionMultiPlot(linSpaceVec, samples, "Radial Basis Function Samples", "10cm", "7cm", "rbf.svg")
+    p := plot.New()
+    lines := plt.MakeMultiLineUnicorn(linSpace, samples, 1.2, plt.DesignedPalette{Type: plt.RANDOM_PALETTE, Num: numSamples}, nil)
+    for _, line := range lines { p.Add(line) }
+//     p.Add(lines...) // this apparently doesn't work
+    p.Title.Text, p.X.Label.Text, p.Y.Label.Text = "Radial Basis Function Samples", "x", "y"
+    p.Save(300, 200, "rbf.svg")
 }
 
 
@@ -183,7 +191,7 @@ func VisualiseGaussianProcessBelief(Wid, Hei int, X, Y, XStar *mat.Dense, length
                 XRange: XRang,
                 YRange: YRang,
     }
-    pal := palette.Heat(100, 1)
+    pal := plt.DesignedPalette{Type: plt.BLACK_BODY_PALETTE, Num: 100}
     heights := make([]float64, 50)
     for i := range heights { heights[i] = 0.01 * float64(i+1) }
     contour := plotter.NewContour(&m, heights, pal)
@@ -200,26 +208,14 @@ func VisualiseGaussianProcessBelief(Wid, Hei int, X, Y, XStar *mat.Dense, length
     p.Add(pImg)
     p.Save(6*vg.Inch, 4*vg.Inch, "belief_heatmap.png")
 
-    XSize, _ := X.Dims()
-    ScatterData := make(plotter.XYs, XSize)
-    for i := range ScatterData {
-        ScatterData[i].X = X.At(i,0)
-        ScatterData[i].Y = Y.At(i,0)
-	}
-    sc, err := plotter.NewScatter(ScatterData)
-	if err != nil { panic(err) }
-
+    xSize, _ := X.Dims()
+    scatter := plt.MakeScatterUnicorn(mat.Col(nil, 0, X), mat.Col(nil, 0, Y), plt.CIRCLE_POINT_MARKER, 4.0, plt.DesignedPalette{Type: plt.UNI_PALETTE, Extra: 0x000000ff, Num: xSize})
     p = plot.New()
     p.Title.Text = `Contour map of our belief`
     p.X.Label.Text = `$x$`
     p.Y.Label.Text = `$y$`
     p.Add(contour)
-    sc.GlyphStyleFunc = func(i int) draw.GlyphStyle { return draw.GlyphStyle{
-                                                        Color: color.RGBA{A:255},
-                                                        Radius: 5, Shape: draw.CircleGlyph{},
-                                                     }
-	}
-    p.Add(sc)
+    p.Add(scatter)
     p.Save(6*vg.Inch, 4*vg.Inch, "belief_contourmap.svg")
 }
 
@@ -235,8 +231,7 @@ func main() {
     VisualiseRBFKernel()
 
     N := 5
-    linSpace := make([]float64, N)
-    for i := range linSpace { linSpace[i] = -4.0 +  8.0 * float64(i) / float64(N) }
+    linSpace := utils.Linspace(-4.0, 4.0, N)
     linSpaceVec := mat.NewDense(N, 1, linSpace)
 
     Y := mat.NewDense(N, 1, nil)
@@ -244,8 +239,7 @@ func main() {
     Y.Apply(func (j, i int, v float64) float64 {return 2*math.Sin(float64(j)) + 0.3*normal.Rand()}, Y)
 
     XStarRes := 300
-    XStar := make([]float64, XStarRes)
-    for i := range XStar { XStar[i] = -6.0 +  12.0 * float64(i) / float64(XStarRes) }
+    XStar := utils.Linspace(-6.0, 6.0, XStarRes)
     XStarVec := mat.NewDense(XStarRes, 1, XStar)
 
     VisualizeGaussianProcess(linSpaceVec, Y, XStarVec, 2.0, 1.0, 1.5)

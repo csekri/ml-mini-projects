@@ -3,7 +3,6 @@ package main
 import (
     "fmt"
     "math"
-    "image/color"
     "golang.org/x/exp/rand"
 
     "gonum.org/v1/gonum/stat/distuv"
@@ -11,25 +10,16 @@ import (
     "gonum.org/v1/gonum/floats"
 
     "gonum.org/v1/plot"
-    "gonum.org/v1/plot/plotter"
-    "gonum.org/v1/plot/vg"
-    "gonum.org/v1/plot/vg/draw"
 
     "ml_playground/utils"
-//     "ml_playground/plt"
+    "ml_playground/plt"
     "ml_playground/pic"
 )
 
 // random number seed and source
-var randSeed = 10
+var randSeed = 9
 var randSrc = rand.NewSource(uint64(randSeed))
 
-
-func UtilityFunc(F func (float64) float64, FStar float64) func (float64) float64 {
-    return func (X float64) float64 {
-           return  math.Max(0.0, FStar - F(X))
-    }
-}
 
 func GaussianProcessPrediction(X, Y, XStar *mat.Dense, lengthScale, varSigma, betaNoise float64) (*mat.Dense, *mat.SymDense) {
     KStarX := RadialBasisFunctionKernel(XStar, X, lengthScale, varSigma)
@@ -111,9 +101,11 @@ func IsElem(Item int, X []int) bool {
 }
 
 func GetNRandomIndices(N, UpperBound int) []int {
+    randSrc := rand.NewSource(uint64(randSeed))
+    randGen := rand.New(randSrc)
     var indices []int
     for ; len(indices) < N; {
-        ind := rand.Intn(UpperBound)
+        ind := randGen.Intn(UpperBound)
         if !IsElem(ind, indices) {
             indices = append(indices, ind)
         }
@@ -145,93 +137,57 @@ func Argmax(X []float64) int {
     return XMax
 }
 
-func BOPlot(alpha, XComp []float64, Mu *mat.Dense, Sigma *mat.SymDense, X []float64, F func (float64) float64) (*plot.Plot, *plot.Plot) {
+func BOPlot(Alpha, XCoord []float64, Mu *mat.Dense, Sigma *mat.SymDense, X []float64, F func (float64) float64) (*plot.Plot, *plot.Plot) {
 
     p := plot.New()
 
-    scatterData := make(plotter.XYs, 2*len(alpha))
-    for i := range scatterData {
-        scatterData[i].X = XComp[i/2]
+    objectiveFunction := make([]float64, len(XCoord))
+    mu := mat.Col(nil, 0, Mu)
+    upperSigma := make([]float64, len(XCoord))
+    lowerSigma := make([]float64, len(XCoord))
+    FPrimes := make([]float64, len(X))
+
+    for i := range FPrimes {
+        FPrimes[i] = F(X[i])
+    }
+    xStar := Argmin(FPrimes)
+    for i := range XCoord {
+        objectiveFunction[i] = F(XCoord[i])
+        upperSigma[i] = mu[i] + 9*Sigma.At(i,i)
+        lowerSigma[i] = mu[i] - 9*Sigma.At(i,i)
+    }
+
+    zigZagX := make([]float64, 2*len(XCoord))
+    zigZagY := make([]float64, 2*len(XCoord))
+    for i := range zigZagX {
+        zigZagX[i] = XCoord[i/2]
         if i % 2 == 0 {
-            scatterData[i].Y = Mu.At(i/2, 0) - 9*Sigma.At(i/2,i/2)
+            zigZagY[i] = lowerSigma[i/2]
         } else {
-            scatterData[i].Y = Mu.At(i/2, 0) + 9*Sigma.At(i/2,i/2)
+            zigZagY[i] = upperSigma[i/2]
         }
     }
-    l, _ := plotter.NewLine(scatterData)
-    l.LineStyle = draw.LineStyle{Color: color.RGBA{R: 0, G: 0, B: 200, A: 255}, Width: vg.Points(2)}
-    p.Add(l)
 
-    scatterData = make(plotter.XYs, len(alpha))
-    for i := range scatterData {
-        scatterData[i].X = XComp[i]
-        scatterData[i].Y = Mu.At(i, 0) + 9*Sigma.At(i,i)
-    }
-    l, _ = plotter.NewLine(scatterData)
-    l.LineStyle = draw.LineStyle{Color: color.RGBA{R: 0, G: 0, B: 200, A: 255}, Width: vg.Points(2)}
-    p.Add(l)
+    lZigZag := plt.MakeLineUnicorn(zigZagX, zigZagY, 2.0, 0x0000eeff, nil)
+    lUpperSigma := plt.MakeLineUnicorn(XCoord, upperSigma, 2.0, 0x0000eeff, nil)
+    lLowerSigma := plt.MakeLineUnicorn(XCoord, lowerSigma, 2.0, 0x0000eeff, nil)
+    lAlpha := plt.MakeLineUnicorn(XCoord, Alpha, 2.0, 0x0000eeff, nil)
+    lMu := plt.MakeLineUnicorn(XCoord, mu, 3.0, 0x00ee00ff, nil)
+    lObjectiveFunction := plt.MakeLineUnicorn(XCoord, objectiveFunction, 2.0, 0xee0000ff, nil)
+    sFPrimes := plt.MakeScatterUnicorn(X, FPrimes, plt.CIRCLE_POINT_MARKER, 4.0, plt.DesignedPalette{Type: plt.UNI_PALETTE, Extra: 0x000000ff, Num: len(X)})
+    sXStar := plt.MakeScatterUnicorn([]float64{X[xStar]}, []float64{F(X[xStar])}, plt.PYRAMID_POINT_MARKER, 6.0, plt.DesignedPalette{Type: plt.UNI_PALETTE, Extra: 0xff0000ff, Num: len(X)})
 
-    scatterData = make(plotter.XYs, len(alpha))
-    for i := range scatterData {
-        scatterData[i].X = XComp[i]
-        scatterData[i].Y = Mu.At(i, 0) - 9*Sigma.At(i,i)
-    }
-    l, _ = plotter.NewLine(scatterData)
-    l.LineStyle = draw.LineStyle{Color: color.RGBA{R: 0, G: 0, B: 200, A: 255}, Width: vg.Points(2)}
-    p.Add(l)
-    p.Legend.Add("uncertainty boundaries", l)
+    p.Add(lZigZag, lUpperSigma, lLowerSigma, lMu, lObjectiveFunction, sFPrimes, sXStar)
 
-    scatterData = make(plotter.XYs, len(alpha))
-    for i := range scatterData {
-        scatterData[i].X = XComp[i]
-        scatterData[i].Y = Mu.At(i, 0)
-    }
-    l, _ = plotter.NewLine(scatterData)
-    l.LineStyle = draw.LineStyle{Color: color.RGBA{R: 0, G: 200, B: 0, A: 255}, Width: vg.Points(3)}
-    p.Add(l)
-    p.Legend.Add("predicted mean", l)
-
-    scatterData = make(plotter.XYs, len(alpha))
-    for i := range scatterData {
-        scatterData[i].X = XComp[i]
-        scatterData[i].Y = F(XComp[i])
-    }
-    l, _ = plotter.NewLine(scatterData)
-    l.LineStyle = draw.LineStyle{Color: color.RGBA{R: 210, G: 0, B: 0, A: 255}, Width: vg.Points(2)}
-    p.Add(l)
-    p.Legend.Add("objective function", l)
-
-    ScatterData := make(plotter.XYs, len(X))
-    for i := range ScatterData {
-        ScatterData[i].X = X[i]
-        ScatterData[i].Y = F(X[i])
-	}
-    sc, err := plotter.NewScatter(ScatterData)
-	if err != nil { panic(err) }
-    sc.GlyphStyleFunc = func(i int) draw.GlyphStyle { return draw.GlyphStyle{
-                                                        Color: color.RGBA{A:255},
-                                                        Radius: 4, Shape: draw.CircleGlyph{},
-                                                     }
-	}
-    p.Add(sc)
-
+    p.Legend.Add("uncertainty boundaries", lUpperSigma)
+    p.Legend.Add("predicted mean", lMu)
+    p.Legend.Add("objective function", lObjectiveFunction)
+    p.Legend.Add("queried points", sFPrimes)
+    p.Legend.Add("current minimum", sXStar)
 
     p2 := plot.New()
-    scatterData = make(plotter.XYs, len(alpha))
-    for i := range scatterData {
-        scatterData[i].X = XComp[i]
-        scatterData[i].Y = alpha[i]
-    }
-    l, _ = plotter.NewLine(scatterData)
-    l.LineStyle = draw.LineStyle{Color: color.RGBA{R: 200, G: 200, B: 0, A: 255}, Width: vg.Points(2)}
-    p2.Add(l)
-    p2.Legend.Add("expected improvement", l)
-
-    plots := make([][]*plot.Plot, 2)
-    plots[0] = make([]*plot.Plot, 1)
-    plots[0][0] = p
-    plots[1] = make([]*plot.Plot, 1)
-    plots[1][0] = p2
+    p2.Add(lAlpha)
+    p2.Legend.Add("expected improvement", lAlpha)
 
     p.X.Min = -3.0
     p.X.Max = 3.0
@@ -244,7 +200,6 @@ func BOPlot(alpha, XComp []float64, Mu *mat.Dense, Sigma *mat.SymDense, X []floa
     p2.X.Label.Text = "x"
     p2.Y.Label.Text = "y"
     p2.Title.Text = "Expected Improvement"
-
     return p, p2
 }
 
@@ -300,11 +255,6 @@ func BO(F func (float64) float64, AllX []float64, NumRandom, NumIter int) (float
 
 
 func main() {
-//     f := func (X float64) float64 { return X*X }
-//     fOfXStar := 1.2
-//     U := UtilityFunc(f, fOfXStar)
-//     fmt.Println(U(0.4))
-
     f := func (x float64) float64 {
         return math.Sin(3.0*x) - x + x*x
     }
@@ -315,7 +265,7 @@ func main() {
         X[i] = -3.0 + float64(i) / float64(NumPoints) * 6.0
     }
 
-    x, y := BO(f, X, 3, 5)
+    x, y := BO(f, X, 3, 7)
 
     fmt.Println("x", x, "y", y)
 }

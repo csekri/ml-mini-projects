@@ -8,7 +8,7 @@ import (
     "gonum.org/v1/plot"
     "gonum.org/v1/plot/plotter"
     "gonum.org/v1/plot/vg"
-    "gonum.org/v1/plot/vg/draw"
+//     "gonum.org/v1/plot/vg/draw"
     "gonum.org/v1/plot/text"
     "gonum.org/v1/plot/font"
     "gonum.org/v1/plot/font/liberation"
@@ -18,21 +18,6 @@ import (
     "ml_playground/pic"
     "ml_playground/optimisers"
 )
-
-// palette containing only black colour with some transparency
-type BlackPalette string
-
-/*
-SUMMARY
-    Implementing the Palette interface
-PARAMETERS
-    N/A
-RETURN
-    []color.Color: the colours forming the palette
-*/
-func (p BlackPalette) Colors() []color.Color {
-    return []color.Color{color.RGBA{A:70}}
-}
 
 
 /*
@@ -58,6 +43,8 @@ func DescentPlot(function func ([]float64) float64, Ats [][][]float64, XMin, XMa
                              color.RGBA{170, 170, 170, 255},
                              color.RGBA{255, 191, 0, 255},
                               }
+    ballPal := plt.CustomPalette{myPalette}
+    blackPal := plt.DesignedPalette{Type: plt.UNI_PALETTE, Num: 1, Extra: 0x00000044}
     m := plt.FuncHeatMap{
         Function: func (x,y float64) float64 {
             return function([]float64{x,y})
@@ -76,26 +63,32 @@ func DescentPlot(function func ([]float64) float64, Ats [][][]float64, XMin, XMa
     p.X.Label.Text = `$x$`
     p.Y.Label.Text = `$y$`
 
-    var pal BlackPalette = ""
     heights := make([]float64, 50)
     for i := range heights { heights[i] = 0.01 * math.Exp(float64(i+1)/4) }
-    contour := plotter.NewContour(&m, heights, pal)
+    contour := plotter.NewContour(&m, heights, blackPal)
 
-    ScatterData := make(plotter.XYs, len(Ats))
-    for trajectory := range ScatterData {
-        LastIndex := len(Ats[trajectory]) - 1
-        ScatterData[trajectory].X = Ats[trajectory][LastIndex][0]
-        ScatterData[trajectory].Y = Ats[trajectory][LastIndex][1]
+//     ScatterData := make(plotter.XYs, len(Ats))
+//     for trajectory := range ScatterData {
+//         LastIndex := len(Ats[trajectory]) - 1
+//         ScatterData[trajectory].X = Ats[trajectory][LastIndex][0]
+//         ScatterData[trajectory].Y = Ats[trajectory][LastIndex][1]
+// 	}
+	ballX := make([]float64, len(Ats))
+	ballY := make([]float64, len(Ats))
+	for i := range Ats {
+        LastIndex := len(Ats[i]) - 1
+	    ballX[i], ballY[i] = Ats[i][LastIndex][0], Ats[i][LastIndex][1]
 	}
-    sc, err := plotter.NewScatter(ScatterData)
-	if err != nil {
-		panic(err)
-	}
-    sc.GlyphStyleFunc = func(i int) draw.GlyphStyle { return draw.GlyphStyle{
-                                                        Color: myPalette[i],
-                                                        Radius: 5, Shape: draw.CircleGlyph{},
-                                                     }
-	}
+	sc := plt.MakeScatterUnicorn(ballX, ballY, plt.CIRCLE_POINT_MARKER, 5.0, ballPal)
+//     sc, err := plotter.NewScatter(ScatterData)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+//     sc.GlyphStyleFunc = func(i int) draw.GlyphStyle { return draw.GlyphStyle{
+//                                                         Color: myPalette[i],
+//                                                         Radius: 5, Shape: draw.CircleGlyph{},
+//                                                      }
+// 	}
 
     p.Add(contour)
 	for trajectory := range Ats {

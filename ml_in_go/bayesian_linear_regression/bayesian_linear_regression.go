@@ -13,7 +13,6 @@ import (
 
     "gonum.org/v1/plot"
     "gonum.org/v1/plot/plotter"
-    "gonum.org/v1/plot/palette"
     "gonum.org/v1/plot/vg"
     "gonum.org/v1/plot/vg/vgimg"
     "gonum.org/v1/plot/vg/draw"
@@ -43,13 +42,14 @@ RETURN
 func PlotDistribution(mu []float64, sigma *mat.SymDense) *plot.Plot {
     multiNormal, _ := distmv.NewNormal(mu, sigma, randSrc)
     m := plt.FuncHeatMap{Function: func (x,y float64) float64 {return multiNormal.Prob([]float64{x, y})},
-                     Height: 200,
-                     Width: 200,
+                     Height: 500,
+                     Width: 500,
                      XRange: plt.Range{-1.5, 1.5},
                      YRange: plt.Range{-1.5, 1.5},
     }
-    pal := palette.Heat(12, 1)
-    heatmap := plotter.NewHeatMap(&m, pal)
+    pal := plt.DesignedPalette{Type: plt.BLACK_BODY_PALETTE, Num: 500}
+    img := plt.FillImage(&m, pal)
+    pImg := plotter.NewImage(img, 0, 0, 500, 500)
     fonts := font.NewCache(liberation.Collection())
 	plot.DefaultTextHandler = text.Latex{
 		Fonts: fonts,
@@ -58,7 +58,7 @@ func PlotDistribution(mu []float64, sigma *mat.SymDense) *plot.Plot {
     p.Title.Text = `Distribution of the parameters`
     p.X.Label.Text = `$w0$`
     p.Y.Label.Text = `$w1$`
-    p.Add(heatmap)
+    p.Add(pImg)
     return p
 }
 
@@ -214,7 +214,7 @@ func main() {
             }
             fmt.Println("Distribution after seeing " + strconv.Itoa(i) + " data points")
             w, sigma := Posterior(X_few, y_few)
-            p := PlotDistribution(utils.Flatten(w), sigma)
+            p := PlotDistribution(utils.Flatten(w, true), sigma)
             plots[row][col] = p
             gm.CollectFrames(p)
 

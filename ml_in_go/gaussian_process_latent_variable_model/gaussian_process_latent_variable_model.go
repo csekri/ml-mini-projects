@@ -3,18 +3,17 @@ package main
 import (
     "fmt"
     "math"
-    "image/color"
+    "golang.org/x/exp/rand"
+
     "gonum.org/v1/gonum/mat"
     "gonum.org/v1/gonum/floats"
-    "golang.org/x/exp/rand"
     "gonum.org/v1/gonum/stat/distuv"
     "gonum.org/v1/gonum/stat"
     "gonum.org/v1/gonum/stat/distmv"
+
     "gonum.org/v1/plot"
     "gonum.org/v1/plot/plotter"
     "gonum.org/v1/plot/vg"
-//     "gonum.org/v1/plot/vg/draw"
-//     "gonum.org/v1/plot/palette"
     "gonum.org/v1/plot/text"
     "gonum.org/v1/plot/font"
     "gonum.org/v1/plot/font/liberation"
@@ -132,26 +131,6 @@ func RandomSlice(Num int, mu, sigma float64) []float64 {
     return slice
 }
 
-// this type is used to define the BW colour palette
-type BWPalette string
-
-
-/*
-SUMMARY
-    Defines the palette interface for BWPalette
-PARAMETERS
-    N/A
-RETURN
-    []color.Color: the set of colours forming the palette (order does matter)
-*/
-func (pal BWPalette) Colors() []color.Color {
-    colours := make([]color.Color, 256)
-    for i := range colours {
-        colours[i] = color.RGBA{R:uint8(i), G:uint8(i), B:uint8(i), A:255}
-    }
-    return colours
-}
-
 
 func OptimisableGrad(Y *mat.Dense, Sigma, LengthScale float64) func ([]float64) []float64 {
     return func (X []float64) []float64 {
@@ -251,12 +230,6 @@ func main() {
             XPred.Set(y, x, At[y*2 + x])
         }
     }
-//     labels := make([]int, NumPoints)
-//     for i:=0; i<100; i++ {
-//         labels[0] = i
-//     }
-//
-//     plt.ScatterPlotWithLabels(mat.Col(nil, 0, XPred), mat.Col(nil, 1, XPred), labels, "10cm", "10cm", "Scatter Plot of the Reduced Dimension", "prediction_scatter_plot.svg")
 
     density := mat.NewDense(300, 300, nil)
 
@@ -282,7 +255,7 @@ func main() {
         YRange: plt.Range{YMin, YMax},
     }
 
-    var pal BWPalette = ""
+    pal := plt.DesignedPalette{Type: plt.BLACK_BODY_PALETTE, Num: 256}
     heights := make([]float64, 50)
     for i := range heights { heights[i] = 0.1 * float64(i+1) }
     fonts := font.NewCache(liberation.Collection())
@@ -290,7 +263,7 @@ func main() {
 		Fonts: fonts,
 	}
     p := plot.New()
-    p.Title.Text = `Density plot of the spiral (GPLVM)`
+    p.Title.Text = `Density Plot of the Latent Space (GPLVM)`
     p.X.Label.Text = `$x$`
     p.Y.Label.Text = `$y$`
     img := plt.FillImage(&m, pal)
@@ -300,12 +273,13 @@ func main() {
     p.Save(4*vg.Inch, 4*vg.Inch, "density_plot.png")
 
     p = plot.New()
-    p.Title.Text = `Scatter plot of the prediction`
+    p.Title.Text = "Scatter Plot of the Latent Space (GPLVM)"
     p.X.Label.Text = `$x$`
     p.Y.Label.Text = `$y$`
-    labels := make([]int, NumPoints)
-    for i := range labels { labels[0] = i }
-    plt.ScatterPlotWithLabels(mat.Col(nil, 0, XPred), mat.Col(nil, 1, XPred), labels, "10cm", "10cm", "Scatter Plot of the Reduced Dimension (GPLVM)", "prediction_scatter_plot.svg")
+    pal = plt.DesignedPalette{Type: plt.KINDLMANN_PALETTE, Num: len(mat.Col(nil, 0, XPred))}
+    sc := plt.MakeScatterUnicorn(mat.Col(nil, 0, XPred), mat.Col(nil, 1, XPred), plt.CIRCLE_POINT_MARKER, 3.0, pal)
+    p.Add(sc)
+    p.Save(300, 300, "prediction_scatter_plot.svg")
 
 
 
