@@ -90,7 +90,8 @@ RETURN
     float64: z coordinate r row and c column in the matrix
 */
 func (f *MatrixHeatMap) Z(c, r int) float64 {
-    return f.Matrix.At(c, r)
+    _, M := f.Matrix.Dims()
+    return f.Matrix.At(c, M-r-1)
 }
 
 
@@ -144,6 +145,7 @@ RETURN
     float64: z coordinate y coordinate at r row and x coordinate at c column in the matrix
 */
 func (f *FuncHeatMap) Z(c, r int) float64 {
+//     _, M := f.Dims()
     return f.Function(f.X(c), f.Y(r))
 }
 

@@ -13,6 +13,7 @@ The purpose of this project is to deepen my Machine Learning knowledge, and whil
 	- [K-Means Unsupervised Classifier](#k-means-unsupervised-classifier)
 	- [Inferring Bernoulli Distribution](#inferring-bernoulli-distribution)
 	- [Bayesian Linear Regression](#bayesian-linear-regression)
+	- [Kernels](#kernels)
 	- [Gaussian Processes](#gaussian-processes)
 	- [Principal Component Analysis](#principal-component-analysis)
 	- [Optimisers](#optimisers)
@@ -60,11 +61,38 @@ In this regression problem we try to find the parameters <img src="https://latex
 
 <img src="ml_in_go/bayesian_linear_regression/update_of_belief.gif" width=300>
 
+## Kernels
+
+Before delving deeper into ML algorithm it is worthwile to talk about kernels. Kernels are wonderful inventions. They form an essential part in many algorithms. A kernel describes how an unlabelled data point x influences any other data point x+delta. Kernels have the ability to transform the data space into a new space where the ML task is easier to solve (e.g. by changing the decision boundary). We present three common kernels: radial basis function kernel, linear kernel and periodic kernel.
+
+<table>
+<tr>
+  <td><img src="ml_in_go/kernels/kernels_demo/rbf_matrix.png" width=180></td>
+  <td><img src="ml_in_go/kernels/kernels_demo/rbf.svg" width=300></td>
+</tr>
+</table>
+
+<table>
+<tr>
+  <td><img src="ml_in_go/kernels/kernels_demo/linear_matrix.png" width=180></td>
+  <td><img src="ml_in_go/kernels/kernels_demo/linear.svg" width=300></td>
+</tr>
+</table>
+
+<table>
+<tr>
+  <td><img src="ml_in_go/kernels/kernels_demo/periodic_matrix.png" width=180></td>
+  <td><img src="ml_in_go/kernels/kernels_demo/periodic.svg" width=300></td>
+</tr>
+</table>
+
+
+
+
+
 ## Gaussian Processes
 
 Gaussian processes are very useful to conceptualise belief in a non-parametric way. In this example we use the radial basis function (RBF) kernel.
-
-<img src="ml_in_go/gaussian_processes/rbf.svg">
 
 We generated test data which is a sine curve with some noise. Samples from the fitted Gaussian Process are revealing the structure of generating curve.
 

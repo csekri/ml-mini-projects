@@ -14,6 +14,7 @@ import (
     "ml_playground/utils"
     "ml_playground/plt"
     "ml_playground/pic"
+    "ml_playground/kernels"
 )
 
 // random number seed and source
@@ -21,14 +22,29 @@ var randSeed = 9
 var randSrc = rand.NewSource(uint64(randSeed))
 
 
+/*
+SUMMARY
+    For an unknown location Xstar, computes the distribution of its image.
+PARAMETERS
+    X *mat.Dense: column vector with the x coordinates
+    Y *mat.Dense: column vector which is f(X)+noise
+    XStar *mat.Dense: column vector of unknown locations of interest
+    lengthScale float64: parameter of RBF
+    varSigma float64: parameter of the RBF
+    betaNoise float64: the precision of the noise
+RETURN
+    *mat.Dense: mean of the normal distribution
+    *mat.Dense: covariance of the normal distribution
+*/
 func GaussianProcessPrediction(X, Y, XStar *mat.Dense, lengthScale, varSigma, betaNoise float64) (*mat.Dense, *mat.SymDense) {
-    KStarX := RadialBasisFunctionKernel(XStar, X, lengthScale, varSigma)
-    KXX := RadialBasisFunctionKernel(X, X, lengthScale, varSigma)
+    params := kernels.Parameters{Type: kernels.RBF, LengthScale: lengthScale, VarSigma: varSigma}
+    KStarX := kernels.Kernel(XStar, X, params)
+    KXX := kernels.Kernel(X, X, params)
     KXX.Apply(func (j,i int, v float64) float64 {
                     if i == j { return v + 1 / betaNoise }
                     return v
                 }, KXX)
-    KStarStar := RadialBasisFunctionKernel(XStar, XStar, lengthScale, varSigma)
+    KStarStar :=  kernels.Kernel(XStar, XStar, params)
     KXX.Apply(func (j,i int, v float64) float64 {
                     if i == j {
                         return v + 0.0001
@@ -50,26 +66,17 @@ func GaussianProcessPrediction(X, Y, XStar *mat.Dense, lengthScale, varSigma, be
 }
 
 
-// x1 and x2 are both column vectors
-func RadialBasisFunctionKernel(x1, x2 *mat.Dense, varSigma, lengthScale float64) *mat.Dense {
-    const EUCLIDEAN_DISTANCE = 2
-    NX1, _ := x1.Dims()
-    NX2, _ := x2.Dims()
-    kernel := mat.NewDense(NX1, NX2, nil)
-    kernel.Apply(func (j,i int, v float64) float64 {
-                    dist := floats.Distance(mat.Row(nil, j, x1), mat.Row(nil, i, x2), EUCLIDEAN_DISTANCE)
-                    return varSigma*math.Exp(-dist * dist / lengthScale)
-                 }, kernel)
-    // adding epsilon*(unit matrix) for numerical stability
-    kernel.Apply(func (j,i int, v float64) float64 {
-                    if i == j {
-                        return v + 0.0001
-                    }
-                    return v
-                 }, kernel)
-    return kernel
-}
-
+/*
+SUMMARY
+    Computes the mean and covariance of the acquisition function.
+PARAMETERS
+    X []float64: column vector of seen locations
+    Y []float64: column vector of seen labels
+    AllX []float64: contains all locations of interest
+RETURN
+    *mat.Dense: column vector of the mean
+    *mat.SymDense: square symmetric matrix of the covariance
+*/
 func AcquisitionMeanCov(X, Y []float64, AllX []float64) (*mat.Dense, *mat.SymDense) {
     return GaussianProcessPrediction(mat.NewDense(len(X), 1, X),
                                            mat.NewDense(len(Y), 1, Y),
@@ -80,6 +87,18 @@ func AcquisitionMeanCov(X, Y []float64, AllX []float64) (*mat.Dense, *mat.SymDen
                                            )
 }
 
+
+/*
+SUMMARY
+    Computes the mean and covariance of the acquisition function.
+PARAMETERS
+    FStar float64: the current minimum
+    Mu *mat.Dense: column vector of the mean
+    Sigma *mat.SymDense: square symmetric matrix of the covariance
+RETURN
+    []float64: the expected improvement for all locations
+    *mat.SymDense: square symmetric matrix of the covariance
+*/
 func ExpectedImprovement(FStar float64, Mu *mat.Dense, Sigma *mat.SymDense) []float64 {
     N, _ := Mu.Dims()
     expectation := make([]float64, N)
@@ -113,29 +132,6 @@ func GetNRandomIndices(N, UpperBound int) []int {
     return indices
 }
 
-func Argmin(X []float64) int {
-    Min := math.Inf(1)
-    var XMin int
-    for i := range X {
-        if X[i] < Min {
-            Min = X[i]
-            XMin = i
-        }
-    }
-    return XMin
-}
-
-func Argmax(X []float64) int {
-    Max := math.Inf(-1)
-    var XMax int
-    for i := range X {
-        if X[i] > Max {
-            Max = X[i]
-            XMax = i
-        }
-    }
-    return XMax
-}
 
 func BOPlot(Alpha, XCoord []float64, Mu *mat.Dense, Sigma *mat.SymDense, X []float64, F func (float64) float64) (*plot.Plot, *plot.Plot) {
 
@@ -150,7 +146,7 @@ func BOPlot(Alpha, XCoord []float64, Mu *mat.Dense, Sigma *mat.SymDense, X []flo
     for i := range FPrimes {
         FPrimes[i] = F(X[i])
     }
-    xStar := Argmin(FPrimes)
+    xStar := utils.Argmin(FPrimes)
     for i := range XCoord {
         objectiveFunction[i] = F(XCoord[i])
         upperSigma[i] = mu[i] + 9*Sigma.At(i,i)
@@ -223,9 +219,9 @@ func BO(F func (float64) float64, AllX []float64, NumRandom, NumIter int) (float
         FPrimes[i] = F(X[i])
     }
     FStar := floats.Min(FPrimes)
-    XStar := X[Argmin(FPrimes)]
+    XStar := X[utils.Argmin(FPrimes)]
 
-        fmt.Println("s", XStar, "\t", FStar)
+    fmt.Println("s", XStar, "\t", FStar)
 
     gm1 := pic.GifMaker{Width: 500, Height: 500, Delay:150}
     gm2 := pic.GifMaker{Width: 500, Height: 200, Delay:150}
@@ -235,7 +231,7 @@ func BO(F func (float64) float64, AllX []float64, NumRandom, NumIter int) (float
         p1, p2 := BOPlot(alpha, AllX, mu, sigma, X, F)
         gm1.CollectFrames(p1)
         gm2.CollectFrames(p2)
-        XPrime := AllX[Argmax(alpha)]
+        XPrime := AllX[utils.Argmax(alpha)]
         NewFValue := F(XPrime)
         fmt.Println(XPrime, "\t", NewFValue)
         FPrimes = append(FPrimes, NewFValue)

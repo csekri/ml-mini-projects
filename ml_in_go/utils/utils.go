@@ -1,6 +1,7 @@
 package utils
 
 import (
+    "math"
     "gonum.org/v1/gonum/mat"
 )
 
@@ -88,3 +89,44 @@ func Linspace(Min, Max float64, Num int) []float64 {
     return slice
 }
 
+
+/*
+SUMMARY
+    Argmin in a float slice.
+PARAMETERS
+    X []float64: input slice
+RETURN
+    int: the index of the minimum
+*/
+func Argmin(X []float64) int {
+    Min := math.Inf(1)
+    var XMin int
+    for i := range X {
+        if X[i] < Min {
+            Min = X[i]
+            XMin = i
+        }
+    }
+    return XMin
+}
+
+
+/*
+SUMMARY
+    Argmax in a float slice.
+PARAMETERS
+    X []float64: input slice
+RETURN
+    int: the index of the maximum
+*/
+func Argmax(X []float64) int {
+    Max := math.Inf(-1)
+    var XMax int
+    for i := range X {
+        if X[i] > Max {
+            Max = X[i]
+            XMax = i
+        }
+    }
+    return XMax
+}

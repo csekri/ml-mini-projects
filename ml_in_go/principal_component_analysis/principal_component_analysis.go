@@ -205,8 +205,8 @@ func main() {
         pdf, _ := distmv.NewNormal(mat.Row(nil, i, XPred), VarSigma, randSrc)
         for j:=0; j<300; j++ {
             for k:=0; k<300; k++ {
-                y := YMin+float64(k)/300.0*(YMax-YMin)
-                x := XMin+float64(j)/300.0*(XMax-XMin)
+                y := YMax  - float64(k)/300.0*(YMax-YMin)
+                x := XMin + float64(j)/300.0*(XMax-XMin)
                 density.Set(j, k, density.At(j, k) + pdf.Prob([]float64{x, y}))
             }
         }

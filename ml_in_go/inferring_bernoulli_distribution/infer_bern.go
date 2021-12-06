@@ -1,7 +1,6 @@
 package main
 
 import (
-//     "fmt"
     "gonum.org/v1/gonum/stat/distuv"
     "gonum.org/v1/gonum/floats"
     "golang.org/x/exp/rand"
