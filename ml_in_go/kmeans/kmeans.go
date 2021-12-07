@@ -3,11 +3,14 @@ package main
 
 import (
     "fmt"
+    "image/color"
 
     "gonum.org/v1/gonum/mat"
     "gonum.org/v1/gonum/floats"
     "golang.org/x/exp/rand"
     "gonum.org/v1/gonum/stat/distuv"
+
+    "gonum.org/v1/plot"
 
     "ml_playground/pic"
     "ml_playground/plt"
@@ -144,9 +147,9 @@ RETURN
 */
 func SegmentImage(img pic.RGBImg, numClasses int) {
     height, width := img[0].Dims()
-    r_flat := utils.Flatten(&img[0])
-    g_flat := utils.Flatten(&img[1])
-    b_flat := utils.Flatten(&img[2])
+    r_flat := utils.Flatten(&img[0], true)
+    g_flat := utils.Flatten(&img[1], true)
+    b_flat := utils.Flatten(&img[2], true)
 
     points := mat.NewDense(3, width*height, nil)
     points.SetRow(0, r_flat)
@@ -163,6 +166,48 @@ func SegmentImage(img pic.RGBImg, numClasses int) {
 
 
 /*
+SUMMARY
+    Computes the maximum in an integer slice.
+PARAMETERS
+    X []int: input slice
+RETURN
+    int: the minimum value
+*/
+func MaxInt(X []int) int {
+    max := -1
+    for i := range X {
+        if X[i] > max { max = X[i] }
+    }
+    return max
+}
+
+
+/*
+SUMMARY
+    Creates a plot for the KMeans result in 2d. Each cluster is assigned a random colour.
+PARAMETERS
+    xs []float64: x coordinates
+    ys []float64: y coordinates
+    cs []int: labels
+RETURN
+    *plot.Plot: the resulting plot
+*/
+func KMeansPlot(xs, ys []float64, cs []int) *plot.Plot {
+    numColours := MaxInt(cs) + 1
+    classColours := plt.DesignedPalette{Type: plt.RANDOM_PALETTE, Num: numColours, Extra: 5}.Colors()
+    customColours := make([]color.Color, len(cs))
+    for i, label := range cs {
+        customColours[i] = classColours[label]
+    }
+    pal := plt.CustomPalette{customColours}
+    scatter := plt.MakeScatterUnicorn(xs, ys, plt.CIRCLE_POINT_MARKER, 4.0, pal)
+    p := plot.New()
+    p.Add(scatter)
+    return p
+}
+
+
+/*
 We create random points, apply KMeans and visualise it.
 We also segment an image with KMeans and save the result.
 */
@@ -171,10 +216,12 @@ func main() {
     cs, _ := KMeansClassify(points, 10)
     xs := mat.Row(nil, 0, points)
     ys := mat.Row(nil, 1, points)
-    plt.ScatterPlotWithLabels(xs, ys, cs, "10cm", "7cm", "Kmeans Scatter Plot", "kmeans.svg")
+    p := KMeansPlot(xs, ys, cs)
+    p.Title.Text, p.X.Label.Text, p.Y.Label.Text = "Kmeans Scatter Plot", "x", "Y"
+    p.Save(300, 200, "kmeans.svg")
 
     var img pic.RGBImg = make([]mat.Dense, 3)
     img.LoadPixels("image.jpg")
-    SegmentImage(img, 15)
+    SegmentImage(img, 10)
     img.SaveImage("image_segmented.jpg")
 }

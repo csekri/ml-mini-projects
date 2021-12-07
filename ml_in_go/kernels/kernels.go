@@ -6,11 +6,13 @@ import (
     "gonum.org/v1/gonum/floats"
 )
 
+// enumerate for the type of kernel
 const RBF = 0
 const LINEAR = 1
 const PERIODIC = 2
 
 
+// the parameters for the kernels, it depends on the type which ones are actually used in the computation
 type Parameters struct {
     Type int
     VarSigma float64

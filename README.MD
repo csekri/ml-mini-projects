@@ -45,7 +45,7 @@ This algorithm finds clusters in the input data, thus grouping together data poi
   <td>Original image</td>
   <td>Segmented image
 
-  in 15 colours</td>
+  in 10 colours</td>
 </tr>
 </table>
 

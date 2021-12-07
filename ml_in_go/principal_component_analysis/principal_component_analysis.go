@@ -3,8 +3,8 @@ package main
 import (
     "fmt"
     "math"
-//     "image/color"
     "golang.org/x/exp/rand"
+
     "gonum.org/v1/gonum/mat"
     "gonum.org/v1/gonum/floats"
     "gonum.org/v1/gonum/stat"
@@ -134,26 +134,6 @@ func RandomSlice(Num int, mu, sigma float64) []float64 {
     return slice
 }
 
-// // this type is used to define the BW colour palette
-// type BWPalette string
-//
-//
-// /*
-// SUMMARY
-//     Defines the palette interface for BWPalette
-// PARAMETERS
-//     N/A
-// RETURN
-//     []color.Color: the set of colours forming the palette (order does matter)
-// */
-// func (pal BWPalette) Colors() []color.Color {
-//     colours := make([]color.Color, 256)
-//     for i := range colours {
-//         colours[i] = color.RGBA{R:uint8(i), G:uint8(i), B:uint8(i), A:255}
-//     }
-//     return colours
-// }
-
 
 /*
 We generate a spiral in 2d.
@@ -244,6 +224,4 @@ func main() {
     p.Add(sc)
     p.Save(300, 300, "prediction_scatter_plot.svg")
 }
-
-
 

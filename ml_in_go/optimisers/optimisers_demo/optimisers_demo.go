@@ -8,7 +8,6 @@ import (
     "gonum.org/v1/plot"
     "gonum.org/v1/plot/plotter"
     "gonum.org/v1/plot/vg"
-//     "gonum.org/v1/plot/vg/draw"
     "gonum.org/v1/plot/text"
     "gonum.org/v1/plot/font"
     "gonum.org/v1/plot/font/liberation"
@@ -28,8 +27,10 @@ PARAMETERS
     Ats [][][]float64: the path of descending for all the optimisers
     XMin: the domain's minimal x bound
     XMax: the domain's maximal x bound
-    YMin: the domain's minimal x bound
-    YMax: the domain's maximal x bound
+    YMin: the domain's minimal y bound
+    YMax: the domain's maximal y bound
+RETURN
+    *plot.Plot: plot containing a snapshot of the optimisation process
 */
 func DescentPlot(function func ([]float64) float64, Ats [][][]float64, XMin, XMax, YMin, YMax float64) *plot.Plot {
     // the colour of each optimiser
@@ -67,12 +68,6 @@ func DescentPlot(function func ([]float64) float64, Ats [][][]float64, XMin, XMa
     for i := range heights { heights[i] = 0.01 * math.Exp(float64(i+1)/4) }
     contour := plotter.NewContour(&m, heights, blackPal)
 
-//     ScatterData := make(plotter.XYs, len(Ats))
-//     for trajectory := range ScatterData {
-//         LastIndex := len(Ats[trajectory]) - 1
-//         ScatterData[trajectory].X = Ats[trajectory][LastIndex][0]
-//         ScatterData[trajectory].Y = Ats[trajectory][LastIndex][1]
-// 	}
 	ballX := make([]float64, len(Ats))
 	ballY := make([]float64, len(Ats))
 	for i := range Ats {
@@ -80,15 +75,6 @@ func DescentPlot(function func ([]float64) float64, Ats [][][]float64, XMin, XMa
 	    ballX[i], ballY[i] = Ats[i][LastIndex][0], Ats[i][LastIndex][1]
 	}
 	sc := plt.MakeScatterUnicorn(ballX, ballY, plt.CIRCLE_POINT_MARKER, 5.0, ballPal)
-//     sc, err := plotter.NewScatter(ScatterData)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-//     sc.GlyphStyleFunc = func(i int) draw.GlyphStyle { return draw.GlyphStyle{
-//                                                         Color: myPalette[i],
-//                                                         Radius: 5, Shape: draw.CircleGlyph{},
-//                                                      }
-// 	}
 
     p.Add(contour)
 	for trajectory := range Ats {
@@ -135,8 +121,8 @@ partial x:
 d/dx = 1/5 (20 x^3 - 20 x y + x - 1)
 partial y:
 d/dy = 2 (y - x^2),
-the minimum is at (1,1) with no other local minimum.
-All optimisers are initialised at position (0.9, -0.3)
+The minimum is at (1,1) with no other local minimum.
+All optimisers are initialised at position (0.9, -0.3).
 */
 func main() {
     XStart := 0.9

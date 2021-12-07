@@ -51,6 +51,7 @@ func Sym2Dense(in *mat.SymDense) *mat.Dense {
     return sym
 }
 
+
 /*
 SUMMARY
     Converts a dense matrix to a symmetric dense matrix.
@@ -130,3 +131,22 @@ func Argmax(X []float64) int {
     }
     return XMax
 }
+
+
+/*
+SUMMARY
+    Check if an integer is element of an integer slice
+PARAMETERS
+    Item int: item to check
+    X []int: slice to be searched in
+RETURN
+    bool: true if contained, false otherwise
+*/
+func IsElem(Item int, X []int) bool {
+    if len(X) == 0 {
+        return false
+    } else {
+        return (Item == X[0]) || IsElem(Item, X[1:])
+    }
+}
+

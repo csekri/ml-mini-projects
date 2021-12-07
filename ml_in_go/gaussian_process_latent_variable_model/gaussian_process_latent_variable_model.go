@@ -6,7 +6,6 @@ import (
     "golang.org/x/exp/rand"
 
     "gonum.org/v1/gonum/mat"
-    "gonum.org/v1/gonum/floats"
     "gonum.org/v1/gonum/stat/distuv"
     "gonum.org/v1/gonum/stat"
     "gonum.org/v1/gonum/stat/distmv"
@@ -20,33 +19,25 @@ import (
 
     "ml_playground/optimisers"
     "ml_playground/plt"
-    "ml_playground/utils"
+    "ml_playground/kernels"
 )
 
+// random number seed and source
 var randSeed = 10
 var randSrc = rand.NewSource(uint64(randSeed))
 
 
-// x1 and x2 are both column vectors
-func RadialBasisFunctionKernel(x1, x2 *mat.Dense, varSigma, lengthScale float64) *mat.Dense {
-    const EUCLIDEAN_DISTANCE = 2
-    NX1, _ := x1.Dims()
-    NX2, _ := x2.Dims()
-    kernel := mat.NewDense(NX1, NX2, nil)
-    kernel.Apply(func (j,i int, v float64) float64 {
-                    dist := floats.Distance(mat.Row(nil, j, x1), mat.Row(nil, i, x2), EUCLIDEAN_DISTANCE)
-                    return varSigma*math.Exp(-dist * dist / lengthScale)
-                 }, kernel)
-    // adding epsilon*(unit matrix) for numerical stability
-    kernel.Apply(func (j,i int, v float64) float64 {
-                    if i == j {
-                        return v + 0.0001
-                    }
-                    return v
-                 }, kernel)
-    return kernel
-}
-
+/*
+SUMMARY
+    Computes the derivative of the RBF kernel w.r. x_{jd}.
+PARAMETERS
+    X *mat.Dense: this is X in k(X,X) where k(X,X) is the kernel matrix
+    Kernel *mat.Dense: k(X,X)
+    j int: we differentiate w.r x_{jd}, this is j from it
+    d int: we differentiate w.r x_{jd}, this is d from it
+RETURN
+    *mat.Dense: partial k(X,X) / partial x_{jd}
+*/
 func PartialDerivativeOfKernel(X, Kernel *mat.Dense, j, d int, Sigma, Lengthscale float64) *mat.Dense {
     N, _ := Kernel.Dims()
     kernel := mat.NewDense(N, N, nil)
@@ -65,10 +56,23 @@ func PartialDerivativeOfKernel(X, Kernel *mat.Dense, j, d int, Sigma, Lengthscal
 }
 
 
+/*
+SUMMARY
+    The gradient computation of the objective function. The math derivation of it
+    is very complicated and tedious.
+PARAMETERS
+    X *mat.Dense: the latent space, here we differentiate with respect to it
+    Y *mat.Dense: the observed space
+    varSigma float64: parameter of RBF
+    lengthScale float64: parameter of RBF
+RETURN
+    []float64: the gradient dF(X) / DX
+*/
 func Gradient(X, Y *mat.Dense, varSigma, lengthScale float64) []float64 {
+    params := kernels.Parameters{Type: kernels.RBF, VarSigma: varSigma, LengthScale: lengthScale}
     N, D := X.Dims()
     grad := make([]float64, N*D)
-    Kernel := RadialBasisFunctionKernel(X, X, varSigma, lengthScale)
+    Kernel := kernels.Kernel(X, X, params)
     // add noise to the kernel, this also improves numerical stability
     Kernel.Apply(
         func (j, i int, v float64) float64 {
@@ -132,6 +136,16 @@ func RandomSlice(Num int, mu, sigma float64) []float64 {
 }
 
 
+/*
+SUMMARY
+    Return the function format that we can use with ml_playground/optimisers.
+PARAMETERS
+    Y *mat.Dense: the observed space
+    Sigma float64: parameter of RBF
+    LengthScale float64: parameter of RBF
+RETURN
+    func ([]float64) []float64: function that maps the derivative to the input aka gradient
+*/
 func OptimisableGrad(Y *mat.Dense, Sigma, LengthScale float64) func ([]float64) []float64 {
     return func (X []float64) []float64 {
         N, _ := Y.Dims()
@@ -142,35 +156,21 @@ func OptimisableGrad(Y *mat.Dense, Sigma, LengthScale float64) func ([]float64) 
 
 
 /*
-SUMMARY
-    Draws and visualises samples from an RBF kernel.
-PARAMETERS
-    N/A
-RETURN
-    N/A
+SUMMARY:
+    The objective function. Now it only has debugging purposes so that we can see the loss
+    during the gradient descent.
+PARAMETERS:
+    X []float64: the latent space but flattened to a slice
+    Y *mat.Dense: observed space
+    Sigma float64: parameter of RBF
+    LengthScale float64: parameter of RBF
 */
-func VisualiseRBFKernel() {
-    linSpaceRes := 200
-    linSpace := make([]float64, linSpaceRes)
-    for i := range linSpace { linSpace[i] = -6.0 +  12.0 * float64(i) / float64(linSpaceRes) }
-    linSpaceVec := mat.NewDense(linSpaceRes, 1, linSpace)
-    _K := RadialBasisFunctionKernel(linSpaceVec, linSpaceVec, 1.0, 2.0)
-    K := utils.Dense2Sym(_K)
-    mu := make([]float64, linSpaceRes)
-    multiNormal, _ := distmv.NewNormal(mu, K, randSrc)
-    numSamples := 20
-    samples := mat.NewDense(linSpaceRes, numSamples, nil)
-        for i:=0; i<numSamples; i++ {
-            samples.SetCol(i, multiNormal.Rand(nil))
-        }
-    plt.FunctionMultiPlot(linSpaceVec, samples, "Radial Basis Function Samples", "10cm", "7cm", "rbf.svg")
-}
-
 func F(X []float64, Y *mat.Dense, Sigma, LengthScale float64) float64 {
+    params := kernels.Parameters{Type: kernels.RBF, VarSigma: Sigma, LengthScale: LengthScale}
     N, _ := Y.Dims()
     D := len(X) / N
     XMat := mat.NewDense(N, D, X)
-    Kernel := RadialBasisFunctionKernel(XMat, XMat, Sigma, LengthScale)
+    Kernel := kernels.Kernel(XMat, XMat, params)
     Kernel.Apply(
         func (j, i int, v float64) float64 {
             if i == j {
@@ -190,13 +190,11 @@ func F(X []float64, Y *mat.Dense, Sigma, LengthScale float64) float64 {
     return float64(N) * math.Log(mat.Det(Kernel)) + mat.Trace(tmp2)
 }
 
-func ObjectiveFunc(Y *mat.Dense, Sigma, LengthScale float64) func ([]float64) float64 {
-    return func (X []float64) float64 {
-        return F(X, Y, Sigma, LengthScale)
-    }
-}
 
-
+/*
+We generate a spiral, embedd it in the 10d space, and try to recover
+the original space using GPLVM. We use the Adam optimiser in GPLVM.
+*/
 func main() {
     fmt.Println("")
     NumPoints := 80
