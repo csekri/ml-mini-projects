@@ -86,24 +86,20 @@ Before delving deeper into ML algorithm it is worthwile to talk about kernels. K
 </tr>
 </table>
 
-
-
-
-
 ## Gaussian Processes
 
 Gaussian processes are very useful to conceptualise belief in a non-parametric way. In this example we use the radial basis function (RBF) kernel.
 
 We generated test data which is a sine curve with some noise. Samples from the fitted Gaussian Process are revealing the structure of generating curve.
 
-<img src="ml_in_go/gaussian_processes/gp_pred.svg">
+<img src="ml_in_go/gaussian_processes/gaussian_processes_demo/gp_pred.svg">
 
 Again we can visualise the distribution where we believe the function runs.
 
 <table>
 <tr>
-  <td><img src="ml_in_go/gaussian_processes/belief_heatmap.png" width=350></td>
-  <td><img src="ml_in_go/gaussian_processes/belief_contourmap.svg" width=350></td>
+  <td><img src="ml_in_go/gaussian_processes/gaussian_processes_demo/belief_heatmap.png" width=350></td>
+  <td><img src="ml_in_go/gaussian_processes/gaussian_processes_demo/belief_contourmap.svg" width=350></td>
 </tr>
 </table>
 
