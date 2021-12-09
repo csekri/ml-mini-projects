@@ -5,15 +5,24 @@ which helps with image IO and manipulation.
 package pic
 
 import (
+    "math"
     "image"
     "image/jpeg"
     "image/color"
     "os"
+    "golang.org/x/exp/rand"
+
     "gonum.org/v1/gonum/mat"
+    "gonum.org/v1/gonum/stat/distuv"
 )
 
 // This type is used to manipulate the pixels of an image, no alpha channel is present
 type RGBImg []mat.Dense
+
+
+// random number seed and source
+var randSeed = 10
+var randSrc = rand.NewSource(uint64(randSeed))
 
 
 /*
@@ -131,6 +140,185 @@ func (out RGBImg) GrayScale() {
     out[1].Copy(tmpImg)
     out[2].Copy(tmpImg)
 }
+
+
+/*
+SUMMARY
+    Converts an image to binary by thresholding.
+PARAMETERS
+    Threshold float64: percent i.e. if colour brightness is above this the colour will be white o.w. black
+RETURN
+    N/A
+*/
+func (out RGBImg) BinaryThreshold(Threshold float64) {
+    height, width := out[0].Dims()
+    tmpImg := mat.NewDense(height, width, nil)
+    tmpImg.Copy(&out[0])
+    tmpImg.Add(tmpImg, &out[1])
+    tmpImg.Add(tmpImg, &out[2])
+
+    tmpImg.Apply(
+        func (i, j int, v float64) float64 {
+            if v / 3.0 > 255.0 * Threshold / 100.0 {
+                return 255.0
+            }
+            return 0.0
+        }, tmpImg)
+    out[0] = *mat.NewDense(height, width, nil)
+    out[1] = *mat.NewDense(height, width, nil)
+    out[2] = *mat.NewDense(height, width, nil)
+    out[0].Copy(tmpImg)
+    out[1].Copy(tmpImg)
+    out[2].Copy(tmpImg)
+}
+
+
+/*
+SUMMARY
+    Applies convolution to a matrix with a given kernel.
+PARAMETERS
+    matrix *mat.Dense: the matrix, the result is written in this variable
+    kernel *mat.Dense: an N by N matrix with where N is odd
+RETURN
+    N/A
+*/
+func Convolution(matrix, kernel *mat.Dense) {
+    H, W := matrix.Dims()
+    HK, WK := kernel.Dims()
+    HK, WK = HK / 2, WK / 2
+    out := mat.NewDense(H + 2*HK, W + 2*WK, nil)
+    for y_:=0; y_ < H+2*HK; y_++ {  // this commented part may be useful for custom padding
+        for x_:=0; x_ < W+2*WK; x_++ {
+            y, x := y_ - HK, x_ - WK
+            if (y < 0 || y >= H) || (x < 0 || x >= W) {
+                out.Set(y_, x_, 0.0)
+            } else {
+                out.Set(y_, x_, matrix.At(y, x))
+                matrix.Set(y, x, 0.0)
+            }
+        }
+    }
+    for y:=0; y < H; y++ {
+        for x:=0; x < W; x++ {
+            for j:=-HK; j<=HK; j++ {
+                for i:=-WK; i<=WK; i++ {
+                    k := kernel.At(j+HK, i+WK)
+                    matrix.Set(y, x, matrix.At(y, x) + out.At(HK+y+j, WK+x+i)*k)
+                }
+            }
+        }
+    }
+}
+
+
+func SobelKernelX() *mat.Dense {
+    return mat.NewDense(3, 3, []float64{1.0,2.0,1.0, 0.0,0.0,0.0, -1.0,-2.0,-1.0})
+}
+
+func SobelKernelY() *mat.Dense {
+    return mat.NewDense(3, 3, []float64{1.0,0.0,-1.0, 2.0,0.0,-2.0, 1.0,0.0,-1.0})
+}
+
+
+/*
+SUMMARY
+    Converts an image to binary by thresholding.
+PARAMETERS
+    Threshold float64: percent i.e. if colour brightness is above this the colour will be white o.w. black
+RETURN
+    N/A
+*/
+func (out RGBImg) SobelEdgeDetection() {
+    height, width := out[0].Dims()
+    out.GrayScale()
+    imgX := mat.NewDense(height, width, nil)
+    imgY := mat.NewDense(height, width, nil)
+    imgX.Copy(&out[0])
+    imgY.Copy(&out[1])
+    Convolution(imgX, SobelKernelX())
+    Convolution(imgY, SobelKernelY())
+    img := mat.NewDense(height, width, nil)
+    for y:=0; y < height; y++ {
+        for x:=0; x < width; x++ {
+            img.Set(y, x, math.Sqrt(math.Pow(imgX.At(y, x), 2.0) + math.Pow(imgY.At(y, x), 2.0)))
+        }
+    }
+    minX := mat.Min(img)
+    maxX := mat.Max(img)
+
+    img.Apply(
+        func (j,i int, v float64) float64 {
+            return (v - minX) / (maxX - minX) * 255.0
+        },
+        img,
+    )
+
+    out[0] = *mat.NewDense(height, width, nil)
+    out[1] = *mat.NewDense(height, width, nil)
+    out[2] = *mat.NewDense(height, width, nil)
+    out[0].Copy(img)
+    out[1].Copy(img)
+    out[2].Copy(img)
+}
+
+
+/*
+SUMMARY
+    Inverts the colour of an image.
+PARAMETERS
+    N/A
+RETURN
+    N/A
+*/
+func (out RGBImg) InvertColour() {
+    height, width := out[0].Dims()
+    for ch:=0; ch<3; ch++ {
+        for y:=0; y < height; y++ {
+            for x:=0; x < width; x++ {
+                out[ch].Set(y, x, 255.0 - out[ch].At(y, x))
+            }
+        }
+    }
+}
+
+
+/*
+SUMMARY
+    Applies function a function to all values in all channels of the image.
+PARAMETERS
+    F func(j, i int, v float64: the function to apply
+RETURN
+    N/A
+*/
+func (out RGBImg) Apply(F func(j, i int, v float64) float64) {
+    for ch:=0; ch<3; ch++ {
+        out[ch].Apply(F, &out[ch])
+    }
+}
+
+
+func (img RGBImg) AddNoise(Sigma, Proportion float64) {
+    H, W := img[0].Dims()
+    normal := distuv.Normal{Mu: 0.0, Sigma: Sigma, Src: randSrc}
+    uniform := distuv.Uniform{Min: 0.0, Max: 1.0, Src: randSrc}
+    for ch:=0; ch<3; ch++ {
+        for y:=0; y<H; y++ {
+            for x:=0; x<W; x++ {
+                noise := normal.Rand()
+                if uniform.Rand() < Proportion {
+                    img[ch].Set(y, x, img[0].At(y, x) + noise)
+                }
+                if img[ch].At(y, x) > 255.0 {
+                    img[ch].Set(y, x, 255.0)
+                }
+                if img[ch].At(y, x) < 0.0 {
+                    img[ch].Set(y, x, 0.0)
+                }
+            }
+        }
+    }
+}
+
 
 /*
 SUMMARY

@@ -19,4 +19,11 @@ func main() {
     img.GrayScale()
     img.Dither(2)
     img.SaveImage("outimage.jpg")
+
+    err = img.LoadPixels("dog.jpg")
+    if err != nil { panic(err) }
+
+    img.BinaryThreshold(70.0)
+    img.SaveImage("horse_edge.jpg")
+
 }

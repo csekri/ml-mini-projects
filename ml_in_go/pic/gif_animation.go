@@ -42,7 +42,7 @@ func ImageToPaletted(img image.Image) *image.Paletted {
 
 /*
 SUMMARY
-    Adds a new frame to the animation.
+    Adds a new plot frame to the animation.
 PARAMETERS
     p *plot.Plot: the plot in the new frame
 RETURN
@@ -66,6 +66,21 @@ func (gm *GifMaker) CollectFrames(p *plot.Plot)  {
     }
 
     imgPal := ImageToPaletted(src)
+    gm.Images = append(gm.Images, imgPal)
+    gm.Delays = append(gm.Delays, gm.Delay)
+}
+
+
+/*
+SUMMARY
+    Adds a new image frame to the animation.
+PARAMETERS
+    Img image.Image: the image in the new frame
+RETURN
+    N/A
+*/
+func (gm *GifMaker) CollectImages(Img image.Image)  {
+    imgPal := ImageToPaletted(Img)
     gm.Images = append(gm.Images, imgPal)
     gm.Delays = append(gm.Delays, gm.Delay)
 }
