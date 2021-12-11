@@ -259,18 +259,14 @@ func GibbsSampling(Img *mat.Dense, Periods int) *mat.Dense {
 
 
 /*
-We first add noise to an image.
-Next we try to restore it with ICM on Ising Model and animate the effort.
+Next we try to restore a noisy image with ICM on Ising Model and animate the effort.
 Next we try to restore it with Gibbs Sampling on Ising Model and animate the effort.
 */
 func main() {
     var img pic.RGBImg = make([]mat.Dense, 3)
-    err := img.LoadPixels("scottie.jpg")
+    err := img.LoadPixels("noisy_scottie.jpg")
     if err != nil { panic(err) }
 
-    img.AddNoise(150.0, 0.6)
-    img.GrayScale()
-    img.SaveImage("noisy_scottie.jpg")
     Height, Width := img[0].Dims()
     img.Apply(func (j, i int, v float64) float64 { return v/255.0 })
     matrix := mat.NewDense(Height, Width, nil)

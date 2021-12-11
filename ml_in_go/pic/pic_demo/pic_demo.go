@@ -24,6 +24,8 @@ func main() {
     if err != nil { panic(err) }
 
     img.BinaryThreshold(70.0)
-    img.SaveImage("dog_2.jpg")
+    img.AddNoise(150.0, 0.6)
+    img.GrayScale()
+    img.SaveImage("noisy_scottie.jpg")
 
 }

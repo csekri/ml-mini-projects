@@ -19,6 +19,8 @@ The purpose of this project is to deepen my Machine Learning knowledge, and whil
 	- [Optimisers](#optimisers)
 	- [Gaussian Process Latent Variable Model](#gaussian-process-latent-variable-model)
 	- [Bayesian Optimisation](#bayesian-optimisation)
+	- [Sampling](#sampling)
+	- [Variational Inference](#variational-inference)
 
 <!-- /TOC -->
 
@@ -147,7 +149,7 @@ As in regular gradient descent based optimisation our task is to find argmin(F(X
 
 ## Sampling
 
-Stochastic approaches can tackle the problems of untractable integrals. We can approximate distributions by sampling from them. Markov Chain Monte Carlo (MCMC) methods were invented as part of the Manhattan project. Gibbs sampling is one of the most straight-forward type of MCMC. In addition we implemented the Iterative Conditional Modes (ICM). We present these methods for the task of image denoising. In the image denoising we use a binary image corrupted with noise. The prior we using is the Ising Model in which we assume that the value of any pixel is affected by its immidiate neighbours. The likelihood is defined by how close any pixel is to the value -1 or 1. In ICM we compare the joint probability `p(X_j=1, X_{every index but j}, Y)` and `p(X_j=-1, X_{every index but j}, Y)`. If the former is the greater the pixel value is set to 1 otherwise to -1. In Gibbs Sampling we compute the posterior `(p=p(X_j=1, X_{every index but j}| Y))` and set a pixel value to 1 if `p>t` where `t~Uniform()`. In both methods we iterate through all the pixels in some predefined amount of time or until convergence.
+Stochastic approaches can tackle the problems of intractable integrals. We can approximate distributions by sampling from them. Markov Chain Monte Carlo (MCMC) methods were invented as part of the Manhattan project. Gibbs sampling is one of the most straight-forward type of MCMC. In addition we implemented the Iterative Conditional Modes (ICM). We present these methods for the task of image denoising. In the image denoising we use a binary image corrupted with noise. The prior we using is the Ising Model in which we assume that the value of any pixel is affected by its immidiate neighbours. The likelihood is defined by how close any pixel is to the value -1 or 1. In ICM we compare the joint probability `p(X_j=1, X_{every index but j}, Y)` and `p(X_j=-1, X_{every index but j}, Y)`. If the former is the greater the pixel value is set to 1 otherwise to -1. In Gibbs Sampling we compute the posterior `(p=p(X_j=1, X_{every index but j}| Y))` and set a pixel value to 1 if `p>t` where `t~Uniform()`. In both methods we iterate through all the pixels in some predefined amount of time or until convergence.
 
 <table>
 <tr>
@@ -164,10 +166,24 @@ Stochastic approaches can tackle the problems of untractable integrals. We can a
 	<td><img src="ml_in_go/sampling/scottie_gibbs.gif" width=300></td>
 </tr>
 <tr>
-	<td style="text-align:center">ICM iterations in the Ising model</td>
+	<td style="text-align:center">ICM iterations in the Ising Model</td>
 	<td style="text-align:center">Gibbs Sampling iterations in the Ising Model</td>
 </tr>
 <tr>
 	<td colspan=2 style="text-align:center">Steps of image restoration</td>
+</tr>
+</table>
+
+
+## Variational Inference
+
+There are deterministic ways to approximate an intractable integral. The core idea is to approximate Jensen's inequality on the log function but the mathematical derivation is quite advanced but rather beautiful. In contrast, when applied to the Ising model the denoising algorithm is very simple and reaches excellent results.
+
+<table>
+<tr>
+  <td><img src="ml_in_go/variational_inference/scottie_vb.gif" width=300></td>
+</tr>
+<tr>
+  <td style="text-align:center">Variational Bayes iterations in the Ising Model</td>
 </tr>
 </table>
